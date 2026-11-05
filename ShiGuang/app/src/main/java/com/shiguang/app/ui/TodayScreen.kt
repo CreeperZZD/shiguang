@@ -188,7 +188,8 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "${p.date} · 按" + (if (p.breakdown != null) "全家" else "你") + " ${p.target} kcal 的目标推荐",
+                            text = if (p.breakdown != null) "${p.date} · 全家餐桌 · 目标 ${p.target} kcal"
+                            else "${p.date} · 按你 ${p.target} kcal 的目标",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f),
@@ -196,7 +197,7 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                         androidx.compose.material3.FilterChip(
                             selected = familyMode,
                             onClick = { familyMode = !familyMode },
-                            label = { Text("🍽 全家餐桌") },
+                            label = { Text("全家餐桌") },
                         )
                     }
                     p.breakdown?.let { parts ->

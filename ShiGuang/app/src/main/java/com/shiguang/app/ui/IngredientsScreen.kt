@@ -64,6 +64,7 @@ fun IngredientsScreen(onOpenRecipe: (Long) -> Unit, onOpenFridgeScan: () -> Unit
     val ctx = LocalContext.current
     var pantry by remember { mutableStateOf<List<String>>(emptyList()) }
     var shelfLife by remember { mutableStateOf<Map<String, Int?>>(emptyMap()) } // name → 保质期天数
+    var daysLeftMap by remember { mutableStateOf<Map<String, Int>>(emptyMap()) } // name → 剩余天数
     var alerts by remember { mutableStateOf<List<ShelfAlert>>(emptyList()) }
     var input by remember { mutableStateOf("") }
     var mode by remember { mutableStateOf("strict") }
@@ -132,17 +133,24 @@ fun IngredientsScreen(onOpenRecipe: (Long) -> Unit, onOpenFridgeScan: () -> Unit
             val names = resp.optJSONArray("names") ?: JSONArray()
             pantry = (0 until names.length()).map { names.getString(it) }
             val items = resp.optJSONArray("items") ?: JSONArray()
-            val shelf = mutableMapOf<String, Int>()
+            val shelf = mutableMapOf<String, Int?>()
+            val leftMap = mutableMapOf<String, Int>()
             val alertList = mutableListOf<ShelfAlert>()
             for (i in 0 until items.length()) {
                 val o = items.getJSONObject(i)
+                val nm = o.getString("name")
                 val shelfDays = if (o.isNull("shelf_life_days")) null else o.optInt("shelf_life_days")
                 val dl = if (o.isNull("days_left")) null else o.optInt("days_left")
-                if (shelfDays != null) shelf[o.getString("name")] = shelfDays
-                if (shelfDays != null && dl != null && dl <= 3) alertList.add(ShelfAlert(o.getString("name"), dl))
+                if (shelfDays != null) {
+                    shelf[nm] = shelfDays
+                    leftMap[nm] = dl ?: 0
+                    // 已过期或 3 天内到期都进提醒；最紧急的排前面
+                    if (dl != null && dl <= 3) alertList.add(ShelfAlert(nm, dl))
+                }
             }
             shelfLife = shelf
-            alerts = alertList
+            daysLeftMap = leftMap
+            alerts = alertList.sortedBy { it.daysLeft }
             loaded = true
             refreshShopping()
             refreshRecommend()
@@ -186,7 +194,7 @@ fun IngredientsScreen(onOpenRecipe: (Long) -> Unit, onOpenFridgeScan: () -> Unit
             }
         }
 
-        // 临期提醒横幅
+        // 临期/过期提醒横幅（最紧急在前）
         if (alerts.isNotEmpty()) {
             item {
                 Card(
@@ -202,7 +210,11 @@ fun IngredientsScreen(onOpenRecipe: (Long) -> Unit, onOpenFridgeScan: () -> Unit
                             Text("临期提醒", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                         }
                         Text(
-                            alerts.joinToString("、") { "${it.name}（剩 ${it.daysLeft.coerceAtLeast(0)} 天）" } + "，优先吃掉它们！",
+                            alerts.joinToString("、") {
+                                if (it.daysLeft < 0) "${it.name}（已过期 ${-it.daysLeft} 天）"
+                                else if (it.daysLeft == 0) "${it.name}（今天到期）"
+                                else "${it.name}（剩 ${it.daysLeft} 天）"
+                            } + "，优先吃掉它们！",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -223,14 +235,13 @@ fun IngredientsScreen(onOpenRecipe: (Long) -> Unit, onOpenFridgeScan: () -> Unit
                     } else {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             pantry.forEach { name ->
-                                val dl = shelfLife[name]
-                                val isExpiring = alerts.any { it.name == name }
+                                val left = daysLeftMap[name]
+                                val isExpiring = left != null && left <= 3
                                 AssistChip(
                                     onClick = { shelfTarget = name },
                                     label = {
                                         Text(
-                                            name +
-                                                (if (dl != null) " ·${dl}天" else "") + " ×",
+                                            name + (if (left != null) " ·剩${if (left < 0) 0 else left}天" else "") + " ×",
                                             color = if (isExpiring) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                                         )
                                     },
