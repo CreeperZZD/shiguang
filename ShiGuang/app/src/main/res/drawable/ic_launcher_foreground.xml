@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 食光新图标：饭碗即表盘，筷子即指针 —— 看图即知"吃饭的时光"
+     奶油白底 + 陶土橘圆盘（碗/表盘双关）+ 奶油白刻度与筷子指针 + 顶部蒸汽 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 表盘碗身（正圆，陶土橘） -->
+    <path
+        android:fillColor="#E2725B"
+        android:pathData="M32,57 a22,22 0 1 0 44,0 a22,22 0 1 0 -44,0 Z" />
+
+    <!-- 碗足 -->
+    <path
+        android:fillColor="#E2725B"
+        android:pathData="M46,78.6 L62,78.6 L60.5,83 L47.5,83 Z" />
+
+    <!-- 四向刻度点（奶油白） -->
+    <path
+        android:fillColor="#FFF8F0"
+        android:pathData="M54,38.6 a1.8,1.8 0 1 0 0.002,0 Z M73.4,57 a1.8,1.8 0 1 0 0.002,0 Z M54,75.4 a1.8,1.8 0 1 0 0.002,0 Z M34.6,57 a1.8,1.8 0 1 0 0.002,0 Z" />
+
+    <!-- 筷子指针：分针直指 12 点，时针斜指 1 点（V 型筷立在碗中） -->
+    <path
+        android:strokeColor="#FFF8F0"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M54,57 L54,42" />
+    <path
+        android:strokeColor="#FFF8F0"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M54,57 L63.5,49.5" />
+
+    <!-- 圆心铆钉 -->
+    <path
+        android:fillColor="#FFF8F0"
+        android:pathData="M54,57 m-2.2,0 a2.2,2.2 0 1 0 4.4,0 a2.2,2.2 0 1 0 -4.4,0 Z" />
+
+    <!-- 顶部两缕蒸汽（陶土橘，与"光"呼应的暖意） -->
+    <path
+        android:strokeColor="#E2725B"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M46,29.5 C44.2,26.5 47.2,24.8 45.8,21.5" />
+    <path
+        android:strokeColor="#E2725B"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M62,29.5 C60.2,26.5 63.2,24.8 61.8,21.5" />
+</vector>

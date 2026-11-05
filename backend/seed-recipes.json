@@ -1,0 +1,526 @@
+[
+  {
+    "name": "番茄炒蛋",
+    "intro": "国民家常菜，酸甜可口，超级下饭。",
+    "category": "家常小炒",
+    "meat_tag": "素",
+    "difficulty": 1,
+    "minutes": 15,
+    "calorie_tier": "中",
+    "ingredients": [
+      { "name": "番茄", "amount": "2个（约300g）" },
+      { "name": "鸡蛋", "amount": "3个" },
+      { "name": "白糖", "amount": "5g" },
+      { "name": "盐", "amount": "2g" },
+      { "name": "小葱", "amount": "1根" },
+      { "name": "食用油", "amount": "20ml" }
+    ],
+    "steps": [
+      "番茄顶部划十字，开水烫后去皮切块",
+      "鸡蛋加少许盐打散备用",
+      "热锅倒油，倒入蛋液炒至八成熟盛出",
+      "锅中留底油，下番茄块中火翻炒出汁",
+      "倒回鸡蛋，加白糖和盐快速翻炒均匀",
+      "撒上葱花即可出锅"
+    ],
+    "nutrition": { "kcal": 220, "protein": 9, "fat": 15, "carb": 12 }
+  },
+  {
+    "name": "青椒肉丝",
+    "intro": "经典快手小炒，青椒爽脆、肉丝滑嫩。",
+    "category": "家常小炒",
+    "meat_tag": "荤",
+    "difficulty": 2,
+    "minutes": 20,
+    "calorie_tier": "中",
+    "ingredients": [
+      { "name": "猪里脊", "amount": "200g" },
+      { "name": "青椒", "amount": "3个" },
+      { "name": "生抽", "amount": "10ml" },
+      { "name": "料酒", "amount": "10ml" },
+      { "name": "淀粉", "amount": "8g" },
+      { "name": "盐", "amount": "2g" },
+      { "name": "食用油", "amount": "20ml" },
+      { "name": "蒜", "amount": "2瓣" }
+    ],
+    "steps": [
+      "猪里脊切丝，加生抽、料酒、淀粉抓匀腌10分钟",
+      "青椒去蒂去籽切丝，蒜切片",
+      "热锅倒油，下肉丝滑炒至变色盛出",
+      "锅内补少许油，爆香蒜片，下青椒丝炒至断生",
+      "倒回肉丝，加盐调味，大火翻炒均匀即可"
+    ],
+    "nutrition": { "kcal": 320, "protein": 18, "fat": 22, "carb": 14 }
+  },
+  {
+    "name": "红烧肉",
+    "intro": "肥而不腻、入口即化的经典硬菜。",
+    "category": "家常小炒",
+    "meat_tag": "荤",
+    "difficulty": 3,
+    "minutes": 90,
+    "calorie_tier": "高",
+    "ingredients": [
+      { "name": "五花肉", "amount": "500g" },
+      { "name": "冰糖", "amount": "20g" },
+      { "name": "生抽", "amount": "15ml" },
+      { "name": "老抽", "amount": "10ml" },
+      { "name": "料酒", "amount": "15ml" },
+      { "name": "姜", "amount": "3片" },
+      { "name": "葱", "amount": "2根" },
+      { "name": "八角", "amount": "2个" },
+      { "name": "食用油", "amount": "10ml" }
+    ],
+    "steps": [
+      "五花肉切3厘米见方的块，冷水下锅焯水后捞出",
+      "锅中少油放冰糖，小火炒至琥珀色糖色",
+      "下肉块翻炒上色，加姜片、葱段、八角",
+      "烹入料酒，加生抽、老抽翻炒均匀",
+      "加热水没过肉块，大火烧开转小火炖60分钟",
+      "大火收汁至浓稠即可"
+    ],
+    "nutrition": { "kcal": 620, "protein": 22, "fat": 45, "carb": 20 }
+  },
+  {
+    "name": "麻婆豆腐",
+    "intro": "麻辣鲜香，川味下饭神器。",
+    "category": "家常小炒",
+    "meat_tag": "荤",
+    "difficulty": 2,
+    "minutes": 25,
+    "calorie_tier": "中",
+    "ingredients": [
+      { "name": "嫩豆腐", "amount": "400g" },
+      { "name": "猪肉末", "amount": "80g" },
+      { "name": "郫县豆瓣酱", "amount": "20g" },
+      { "name": "花椒粉", "amount": "2g" },
+      { "name": "蒜", "amount": "3瓣" },
+      { "name": "姜", "amount": "5g" },
+      { "name": "小葱", "amount": "1根" },
+      { "name": "生抽", "amount": "10ml" },
+      { "name": "淀粉", "amount": "8g" },
+      { "name": "食用油", "amount": "25ml" }
+    ],
+    "steps": [
+      "豆腐切2厘米方块，淡盐水中焯1分钟捞出",
+      "热锅倒油，下肉末炒散至微焦",
+      "加剁碎的豆瓣酱、姜蒜末炒出红油",
+      "加水200ml烧开，轻推入豆腐煮3分钟",
+      "淋淀粉水勾芡，撒花椒粉和葱花即可"
+    ],
+    "nutrition": { "kcal": 350, "protein": 16, "fat": 24, "carb": 12 }
+  },
+  {
+    "name": "清蒸鲈鱼",
+    "intro": "鲜嫩清淡，保留鱼的原汁原味。",
+    "category": "海鲜",
+    "meat_tag": "荤",
+    "difficulty": 2,
+    "minutes": 20,
+    "calorie_tier": "低",
+    "ingredients": [
+      { "name": "鲈鱼", "amount": "1条（约500g）" },
+      { "name": "姜", "amount": "5片" },
+      { "name": "小葱", "amount": "2根" },
+      { "name": "蒸鱼豉油", "amount": "15ml" },
+      { "name": "料酒", "amount": "10ml" },
+      { "name": "食用油", "amount": "15ml" }
+    ],
+    "steps": [
+      "鲈鱼处理干净，两面划刀，抹料酒腌5分钟",
+      "盘底垫姜片葱段，放上鲈鱼",
+      "水开后入锅大火蒸8分钟，关火虚蒸2分钟",
+      "倒掉盘中汤汁，铺上葱丝姜丝",
+      "淋蒸鱼豉油，浇上热油激出香味即可"
+    ],
+    "nutrition": { "kcal": 260, "protein": 28, "fat": 12, "carb": 4 }
+  },
+  {
+    "name": "蒜蓉西兰花",
+    "intro": "清爽低卡，健身人群最爱。",
+    "category": "家常小炒",
+    "meat_tag": "素",
+    "difficulty": 1,
+    "minutes": 15,
+    "calorie_tier": "低",
+    "ingredients": [
+      { "name": "西兰花", "amount": "300g" },
+      { "name": "蒜", "amount": "5瓣" },
+      { "name": "盐", "amount": "2g" },
+      { "name": "鸡精", "amount": "1g" },
+      { "name": "食用油", "amount": "15ml" }
+    ],
+    "steps": [
+      "西兰花切小朵，淡盐水浸泡10分钟洗净",
+      "水烧开加少许盐，焯水1分钟捞出过凉",
+      "蒜剁成蒜蓉备用",
+      "热锅倒油，小火爆香蒜蓉",
+      "倒入西兰花大火快炒，加盐和鸡精炒匀即可"
+    ],
+    "nutrition": { "kcal": 130, "protein": 6, "fat": 8, "carb": 10 }
+  },
+  {
+    "name": "西红柿鸡蛋汤",
+    "intro": "酸甜开胃，5分钟搞定的快手汤。",
+    "category": "汤羹",
+    "meat_tag": "素",
+    "difficulty": 1,
+    "minutes": 10,
+    "calorie_tier": "低",
+    "ingredients": [
+      { "name": "西红柿", "amount": "2个" },
+      { "name": "鸡蛋", "amount": "2个" },
+      { "name": "香油", "amount": "5ml" },
+      { "name": "盐", "amount": "3g" },
+      { "name": "小葱", "amount": "1根" },
+      { "name": "淀粉", "amount": "5g" }
+    ],
+    "steps": [
+      "西红柿切片，鸡蛋打散，淀粉加水调成水淀粉",
+      "锅中少油下西红柿炒出汁",
+      "加水800ml烧开，煮2分钟",
+      "淋入水淀粉勾薄芡，缓缓倒入蛋液搅出蛋花",
+      "加盐调味，滴香油撒葱花即可"
+    ],
+    "nutrition": { "kcal": 120, "protein": 7, "fat": 7, "carb": 8 }
+  },
+  {
+    "name": "可乐鸡翅",
+    "intro": "甜咸适口，新手零失败。",
+    "category": "家常小炒",
+    "meat_tag": "荤",
+    "difficulty": 1,
+    "minutes": 30,
+    "calorie_tier": "中",
+    "ingredients": [
+      { "name": "鸡翅中", "amount": "8个" },
+      { "name": "可乐", "amount": "330ml" },
+      { "name": "生抽", "amount": "15ml" },
+      { "name": "老抽", "amount": "5ml" },
+      { "name": "姜", "amount": "3片" },
+      { "name": "料酒", "amount": "10ml" },
+      { "name": "食用油", "amount": "10ml" }
+    ],
+    "steps": [
+      "鸡翅两面划刀，冷水下锅焯水",
+      "热锅少油，将鸡翅煎至两面金黄",
+      "加姜片、料酒、生抽、老抽翻炒",
+      "倒入可乐没过鸡翅，大火烧开转中小火煮15分钟",
+      "大火收汁至裹满鸡翅即可"
+    ],
+    "nutrition": { "kcal": 420, "protein": 20, "fat": 22, "carb": 30 }
+  },
+  {
+    "name": "鱼香肉丝",
+    "intro": "咸甜酸辣兼备，经典川味。",
+    "category": "家常小炒",
+    "meat_tag": "荤",
+    "difficulty": 3,
+    "minutes": 25,
+    "calorie_tier": "中",
+    "ingredients": [
+      { "name": "猪里脊", "amount": "200g" },
+      { "name": "黑木耳", "amount": "50g" },
+      { "name": "胡萝卜", "amount": "50g" },
+      { "name": "青椒", "amount": "1个" },
+      { "name": "郫县豆瓣酱", "amount": "15g" },
+      { "name": "生抽", "amount": "10ml" },
+      { "name": "醋", "amount": "15ml" },
+      { "name": "白糖", "amount": "15g" },
+      { "name": "淀粉", "amount": "10g" },
+      { "name": "姜", "amount": "5g" },
+      { "name": "蒜", "amount": "3瓣" },
+      { "name": "食用油", "amount": "25ml" }
+    ],
+    "steps": [
+      "里脊切丝用生抽、淀粉腌味，木耳胡萝卜青椒切丝",
+      "调鱼香汁：醋、白糖、生抽、淀粉加水拌匀",
+      "热锅倒油，滑炒肉丝盛出",
+      "下豆瓣酱、姜蒜末炒出红油，倒入配菜炒至断生",
+      "倒回肉丝，烹入鱼香汁，大火翻匀收汁"
+    ],
+    "nutrition": { "kcal": 380, "protein": 16, "fat": 22, "carb": 28 }
+  },
+  {
+    "name": "宫保鸡丁",
+    "intro": "糊辣荔枝口，花生香脆。",
+    "category": "家常小炒",
+    "meat_tag": "荤",
+    "difficulty": 3,
+    "minutes": 25,
+    "calorie_tier": "中",
+    "ingredients": [
+      { "name": "鸡胸肉", "amount": "250g" },
+      { "name": "花生米", "amount": "50g" },
+      { "name": "干辣椒", "amount": "5个" },
+      { "name": "花椒", "amount": "2g" },
+      { "name": "葱白", "amount": "1根" },
+      { "name": "生抽", "amount": "10ml" },
+      { "name": "醋", "amount": "10ml" },
+      { "name": "白糖", "amount": "8g" },
+      { "name": "淀粉", "amount": "8g" },
+      { "name": "料酒", "amount": "10ml" },
+      { "name": "食用油", "amount": "25ml" }
+    ],
+    "steps": [
+      "鸡胸肉切丁，用料酒、生抽、淀粉腌15分钟",
+      "调汁：生抽、醋、白糖、淀粉加水拌匀",
+      "冷油小火炸花生米至酥脆捞出",
+      "留底油爆香干辣椒和花椒，下鸡丁炒至变色",
+      "加葱白段，烹入调味汁，最后拌入花生米出锅"
+    ],
+    "nutrition": { "kcal": 400, "protein": 22, "fat": 24, "carb": 20 }
+  },
+  {
+    "name": "酸辣土豆丝",
+    "intro": "酸辣爽脆，最考验刀工的家常菜。",
+    "category": "家常小炒",
+    "meat_tag": "素",
+    "difficulty": 1,
+    "minutes": 15,
+    "calorie_tier": "低",
+    "ingredients": [
+      { "name": "土豆", "amount": "2个（约400g）" },
+      { "name": "干辣椒", "amount": "3个" },
+      { "name": "醋", "amount": "15ml" },
+      { "name": "盐", "amount": "2g" },
+      { "name": "蒜", "amount": "2瓣" },
+      { "name": "小葱", "amount": "1根" },
+      { "name": "食用油", "amount": "20ml" }
+    ],
+    "steps": [
+      "土豆切细丝，清水冲洗淀粉后浸泡",
+      "热锅倒油，爆香蒜片和干辣椒",
+      "下土豆丝大火快炒2分钟",
+      "沿锅边淋醋，加盐炒匀",
+      "撒葱段断生即可出锅"
+    ],
+    "nutrition": { "kcal": 180, "protein": 4, "fat": 8, "carb": 24 }
+  },
+  {
+    "name": "白灼虾",
+    "intro": "原汁原味，鲜甜Q弹。",
+    "category": "海鲜",
+    "meat_tag": "荤",
+    "difficulty": 1,
+    "minutes": 10,
+    "calorie_tier": "低",
+    "ingredients": [
+      { "name": "鲜虾", "amount": "400g" },
+      { "name": "姜", "amount": "3片" },
+      { "name": "小葱", "amount": "2根" },
+      { "name": "料酒", "amount": "10ml" },
+      { "name": "生抽", "amount": "10ml" }
+    ],
+    "steps": [
+      "鲜虾剪去虾须，清洗干净",
+      "水中放姜片、葱段、料酒烧开",
+      "下鲜虾煮2分钟至变红弯曲捞出",
+      "生抽加少许煮虾原汤调成蘸汁",
+      "剥壳蘸汁食用"
+    ],
+    "nutrition": { "kcal": 160, "protein": 24, "fat": 4, "carb": 4 }
+  },
+  {
+    "name": "香菇滑鸡",
+    "intro": "鸡肉滑嫩，香菇吸饱酱汁。",
+    "category": "家常小炒",
+    "meat_tag": "荤",
+    "difficulty": 2,
+    "minutes": 35,
+    "calorie_tier": "中",
+    "ingredients": [
+      { "name": "鸡腿肉", "amount": "300g" },
+      { "name": "干香菇", "amount": "6朵" },
+      { "name": "生抽", "amount": "15ml" },
+      { "name": "蚝油", "amount": "10ml" },
+      { "name": "淀粉", "amount": "8g" },
+      { "name": "姜", "amount": "5g" },
+      { "name": "蒜", "amount": "2瓣" },
+      { "name": "食用油", "amount": "15ml" }
+    ],
+    "steps": [
+      "干香菇温水泡发切片，泡菇水留用",
+      "鸡腿肉切块，用生抽、淀粉腌15分钟",
+      "热锅倒油爆香姜蒜，下鸡块滑炒至变色",
+      "加入香菇翻炒，倒蚝油和泡菇水",
+      "中小火焖10分钟收汁即可"
+    ],
+    "nutrition": { "kcal": 360, "protein": 24, "fat": 18, "carb": 14 }
+  },
+  {
+    "name": "地三鲜",
+    "intro": "东北经典，土豆茄子青椒的完美组合。",
+    "category": "家常小炒",
+    "meat_tag": "素",
+    "difficulty": 2,
+    "minutes": 25,
+    "calorie_tier": "中",
+    "ingredients": [
+      { "name": "土豆", "amount": "1个" },
+      { "name": "茄子", "amount": "1个" },
+      { "name": "青椒", "amount": "1个" },
+      { "name": "蒜", "amount": "3瓣" },
+      { "name": "生抽", "amount": "10ml" },
+      { "name": "白糖", "amount": "5g" },
+      { "name": "淀粉", "amount": "8g" },
+      { "name": "食用油", "amount": "40ml" }
+    ],
+    "steps": [
+      "土豆茄子切滚刀块，青椒撕小块",
+      "土豆块和茄子块分别过油炸至金黄捞出",
+      "锅留底油爆香蒜末",
+      "倒回所有食材，加生抽、白糖和少许水翻炒",
+      "淋淀粉水勾芡翻匀出锅"
+    ],
+    "nutrition": { "kcal": 300, "protein": 6, "fat": 18, "carb": 30 }
+  },
+  {
+    "name": "蛋炒饭",
+    "intro": "粒粒分明，简单又治愈。",
+    "category": "主食",
+    "meat_tag": "素",
+    "difficulty": 1,
+    "minutes": 10,
+    "calorie_tier": "中",
+    "ingredients": [
+      { "name": "米饭", "amount": "300g" },
+      { "name": "鸡蛋", "amount": "2个" },
+      { "name": "火腿肠", "amount": "50g" },
+      { "name": "小葱", "amount": "1根" },
+      { "name": "盐", "amount": "2g" },
+      { "name": "食用油", "amount": "20ml" }
+    ],
+    "steps": [
+      "隔夜米饭抓散，鸡蛋打散，火腿肠切小丁",
+      "热锅倒油，倒入蛋液炒至凝固",
+      "加入火腿丁略炒，倒入米饭压散翻炒",
+      "加盐调味，中火炒至粒粒分明",
+      "撒葱花翻炒均匀出锅"
+    ],
+    "nutrition": { "kcal": 480, "protein": 12, "fat": 16, "carb": 66 }
+  },
+  {
+    "name": "紫菜蛋花汤",
+    "intro": "清淡鲜美，晚餐轻负担。",
+    "category": "汤羹",
+    "meat_tag": "素",
+    "difficulty": 1,
+    "minutes": 8,
+    "calorie_tier": "低",
+    "ingredients": [
+      { "name": "紫菜", "amount": "10g" },
+      { "name": "鸡蛋", "amount": "1个" },
+      { "name": "香油", "amount": "3ml" },
+      { "name": "盐", "amount": "2g" },
+      { "name": "小葱", "amount": "1根" }
+    ],
+    "steps": [
+      "紫菜撕小块用清水冲一下，鸡蛋打散",
+      "水烧开放紫菜煮1分钟",
+      "缓缓淋入蛋液搅出蛋花",
+      "加盐调味关火",
+      "滴香油撒葱花即可"
+    ],
+    "nutrition": { "kcal": 90, "protein": 6, "fat": 4, "carb": 6 }
+  },
+  {
+    "name": "可乐排骨",
+    "intro": "甜香浓郁，孩子最爱。",
+    "category": "家常小炒",
+    "meat_tag": "荤",
+    "difficulty": 2,
+    "minutes": 45,
+    "calorie_tier": "高",
+    "ingredients": [
+      { "name": "肋排", "amount": "500g" },
+      { "name": "可乐", "amount": "330ml" },
+      { "name": "生抽", "amount": "15ml" },
+      { "name": "老抽", "amount": "8ml" },
+      { "name": "料酒", "amount": "15ml" },
+      { "name": "姜", "amount": "3片" },
+      { "name": "葱", "amount": "1根" }
+    ],
+    "steps": [
+      "肋排剁段，冷水下锅焯水",
+      "热锅少油下排骨煎至微黄",
+      "加姜片、料酒、生抽、老抽",
+      "倒入可乐没过排骨，烧开转小火炖30分钟",
+      "大火收汁至浓稠，撒葱花即可"
+    ],
+    "nutrition": { "kcal": 520, "protein": 24, "fat": 28, "carb": 34 }
+  },
+  {
+    "name": "清炒时蔬",
+    "intro": "应季绿叶菜，清淡爽口。",
+    "category": "家常小炒",
+    "meat_tag": "素",
+    "difficulty": 1,
+    "minutes": 10,
+    "calorie_tier": "低",
+    "ingredients": [
+      { "name": "青菜", "amount": "300g" },
+      { "name": "蒜", "amount": "2瓣" },
+      { "name": "盐", "amount": "2g" },
+      { "name": "食用油", "amount": "15ml" }
+    ],
+    "steps": [
+      "青菜洗净沥干，蒜切片",
+      "热锅倒油爆香蒜片",
+      "下青菜大火快炒至断生",
+      "加盐炒匀立即出锅"
+    ],
+    "nutrition": { "kcal": 110, "protein": 3, "fat": 7, "carb": 8 }
+  },
+  {
+    "name": "冬瓜排骨汤",
+    "intro": "清汤鲜甜，清热解腻。",
+    "category": "汤羹",
+    "meat_tag": "荤",
+    "difficulty": 2,
+    "minutes": 60,
+    "calorie_tier": "低",
+    "ingredients": [
+      { "name": "猪肋排", "amount": "300g" },
+      { "name": "冬瓜", "amount": "300g" },
+      { "name": "姜", "amount": "3片" },
+      { "name": "小葱", "amount": "1根" },
+      { "name": "料酒", "amount": "10ml" },
+      { "name": "盐", "amount": "4g" }
+    ],
+    "steps": [
+      "排骨冷水下锅焯水洗净",
+      "排骨加姜片、料酒和足量水，大火烧开转小火炖40分钟",
+      "冬瓜去皮切厚块加入汤中",
+      "再炖15分钟至冬瓜透明",
+      "加盐调味，撒葱花即可"
+    ],
+    "nutrition": { "kcal": 280, "protein": 20, "fat": 16, "carb": 10 }
+  },
+  {
+    "name": "辣椒炒肉",
+    "intro": "湖南名菜，下饭界的天花板。",
+    "category": "家常小炒",
+    "meat_tag": "荤",
+    "difficulty": 2,
+    "minutes": 20,
+    "calorie_tier": "中",
+    "ingredients": [
+      { "name": "五花肉", "amount": "250g" },
+      { "name": "青椒", "amount": "3个" },
+      { "name": "小米辣", "amount": "2个" },
+      { "name": "蒜", "amount": "3瓣" },
+      { "name": "生抽", "amount": "10ml" },
+      { "name": "豆豉", "amount": "5g" },
+      { "name": "食用油", "amount": "10ml" }
+    ],
+    "steps": [
+      "五花肉切薄片，青椒斜切段，小米辣切圈",
+      "干锅下青椒煸出虎皮盛出",
+      "锅内少油下五花肉煸炒出油至微卷",
+      "加蒜片、豆豉、小米辣爆香",
+      "倒回青椒，加生抽大火翻炒均匀出锅"
+    ],
+    "nutrition": { "kcal": 430, "protein": 20, "fat": 32, "carb": 12 }
+  }
+]

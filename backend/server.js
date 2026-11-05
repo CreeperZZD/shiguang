@@ -1,0 +1,1280 @@
+'use strict';
+/*
+ * 食光 (Shiguang) 食谱 APP 后端 — M1 骨架
+ * 零 npm 依赖：仅使用 Node 内置模块（http / node:sqlite / crypto / fs）。
+ * - 监听 0.0.0.0:8000
+ * - 数据：backend/data/shiguang.db（node:sqlite，首启自动导入种子菜谱）
+ * - LLM 凭据：只从 /opt/recipe-app/secrets/llm.json 读取（chmod 600），绝不写入代码/日志
+ */
+
+const http = require('node:http');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const { db } = require('./db');
+
+const PORT = Number(process.env.PORT || 8000);
+const HOST = process.env.HOST || '0.0.0.0';
+const SECRETS_PATH = process.env.SHIGUANG_SECRETS || '/opt/recipe-app/secrets/llm.json';
+const PAGE_SIZE = 10;
+const START_TS = Date.now();
+
+/* ---------------- 基础工具 ---------------- */
+
+class HttpError extends Error {
+  constructor(status, code, detail) { super(code); this.status = status; this.code = code; this.detail = detail; }
+}
+const bad = (detail) => new HttpError(400, 'bad_request', detail);
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const round2 = (x) => Math.round(x * 100) / 100;
+const pad2 = (n) => String(n).padStart(2, '0');
+const nullish = (v) => (v === undefined ? null : v);
+
+function sendJSON(res, status, obj) {
+  const body = JSON.stringify(obj);
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Length': Buffer.byteLength(body),
+    'Cache-Control': 'no-store',
+  });
+  res.end(body);
+}
+
+function readJSON(req, limit = 8 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks = [];
+    req.on('data', (c) => {
+      size += c.length;
+      if (size > limit) { reject(bad('body_too_large')); req.destroy(); return; }
+      chunks.push(c);
+    });
+    req.on('end', () => {
+      if (!chunks.length) return resolve({});
+      try {
+        const parsed = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        resolve(parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {});
+      } catch { reject(bad('invalid_json_body')); }
+    });
+    req.on('error', () => reject(bad('body_read_error')));
+  });
+}
+
+/* ---------------- 认证 ---------------- */
+
+function getUserByToken(req) {
+  const h = req.headers['authorization'] || '';
+  const m = /^Bearer\s+(.+)$/i.exec(h);
+  if (!m) return null;
+  return db.prepare(`SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id
+    WHERE s.token = ? AND (s.expires_at IS NULL OR s.expires_at > datetime('now','localtime'))`).get(m[1].trim()) || null;
+}
+function requireAuth(req) {
+  const u = getUserByToken(req);
+  if (!u) throw new HttpError(401, 'unauthorized', '缺少或无效的 Bearer token');
+  return u;
+}
+function publicUser(u) {
+  return {
+    id: u.id, phone: u.phone, nickname: u.nickname, gender: u.gender, age: u.age,
+    height_cm: u.height_cm, weight_kg: u.weight_kg, activity: u.activity, goal: u.goal,
+    created_at: u.created_at,
+  };
+}
+
+/* ---------------- 身体数据计算 ---------------- */
+
+const ACTIVITY_ENUM = {
+  sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9,
+  '久坐': 1.2, '轻度活动': 1.375, '中度活动': 1.55, '高度活动': 1.725, '极高活动': 1.9,
+};
+function parseActivity(v) {
+  if (isNum(v)) return v >= 1.2 && v <= 1.9 ? round2(v) : null;
+  if (typeof v === 'string') {
+    const k = v.trim().toLowerCase();
+    if (ACTIVITY_ENUM[k]) return ACTIVITY_ENUM[k];
+    const n = Number(k);
+    if (Number.isFinite(n) && n >= 1.2 && n <= 1.9) return round2(n);
+  }
+  return null;
+}
+/* Mifflin-St Jeor：男 10w + 6.25h - 5a + 5；女 10w + 6.25h - 5a - 161 */
+function healthProfile(u) {
+  const p = {};
+  if (isNum(u.height_cm) && isNum(u.weight_kg)) {
+    const h = u.height_cm / 100;
+    p.bmi = round2(u.weight_kg / (h * h));
+    if (Number.isInteger(u.age) && (u.gender === 'm' || u.gender === 'f')) {
+      const bmr = 10 * u.weight_kg + 6.25 * u.height_cm - 5 * u.age + (u.gender === 'm' ? 5 : -161);
+      p.bmr = round2(bmr);
+      const act = isNum(u.activity) ? u.activity : 1.55;
+      p.activity_factor = act;
+      p.tdee = round2(bmr * act);
+      const goal = u.goal || 'keep';
+      p.goal = goal;
+      p.target_calories = round2(goal === 'lose' ? p.tdee - 400 : goal === 'gain' ? p.tdee + 300 : p.tdee);
+      p.target_rule = goal === 'lose' ? 'TDEE-400' : goal === 'gain' ? 'TDEE+300' : 'TDEE';
+    }
+  }
+  return p;
+}
+
+/* ---------------- 确定性随机（按日期做种子，同日同参数结果稳定） ---------------- */
+
+function xmur3(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return function () {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return (h ^= h >>> 16) >>> 0;
+  };
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function rngFrom(str) { return mulberry32(xmur3(str)()); }
+function localToday() { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+function addDays(ymd, n) {
+  const d = new Date(ymd + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+const WEEKDAY_CN = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+/* ---------------- 菜谱输出 ---------------- */
+
+/* 真实菜品封面：covers/ 目录下 recipe-<id>.jpg（Wikimedia 爬虫产物），存在即返回相对 URL */
+const COVER_DIR = path.join(__dirname, 'covers');
+let _coverSet = null;
+function coverSet() {
+  if (_coverSet) return _coverSet;
+  try { _coverSet = new Set(fs.readdirSync(COVER_DIR).filter((f) => f.endsWith('.jpg'))); }
+  catch { _coverSet = new Set(); }
+  return _coverSet;
+}
+function coverFor(id) {
+  const f = `recipe-${id}.jpg`;
+  return coverSet().has(f) ? `/covers/${f}` : null;
+}
+
+function recipeOut(row, state) {
+  let ingredients = [];
+  let steps = [];
+  try { ingredients = JSON.parse(row.ingredients_json); } catch { }
+  try { steps = JSON.parse(row.steps_json); } catch { }
+  return {
+    id: row.id, name: row.name, intro: row.intro, category: row.category, meat_tag: row.meat_tag,
+    difficulty: row.difficulty, minutes: row.minutes, calorie_tier: row.calorie_tier,
+    ingredients, steps,
+    nutrition: { kcal: row.kcal, protein: row.protein, fat: row.fat, carb: row.carb },
+    views: Number(row.views), like_count: Number(row.like_count), favorite_count: Number(row.favorite_count),
+    cover_url: coverFor(row.id),
+    source: row.source || 'official',
+    liked: !!(state && state.liked),
+    favorited: !!(state && state.favorited),
+  };
+}
+function mealOut(row, servings, state) {
+  return { recipe: recipeOut(row, state), servings, kcal: round2(row.kcal * servings) };
+}
+function loadAllRecipes() { return db.prepare('SELECT * FROM recipes ORDER BY id').all(); }
+
+/* 当前用户对若干菜谱的点赞/收藏状态（可选登录：无 token 返回空 map，字段为 false） */
+function userStateMap(userId, recipeIds) {
+  const map = new Map();
+  if (!userId || !recipeIds || !recipeIds.length) return map;
+  const uniq = [...new Set(recipeIds.map(Number))];
+  const ph = uniq.map(() => '?').join(',');
+  const liked = new Set(db.prepare(`SELECT recipe_id FROM likes WHERE user_id = ? AND recipe_id IN (${ph})`)
+    .all(userId, ...uniq).map((r) => r.recipe_id));
+  const favd = new Set(db.prepare(`SELECT recipe_id FROM favorites WHERE user_id = ? AND recipe_id IN (${ph})`)
+    .all(userId, ...uniq).map((r) => r.recipe_id));
+  for (const id of uniq) map.set(id, { liked: liked.has(id), favorited: favd.has(id) });
+  return map;
+}
+
+/* ---------------- 三餐/周排餐规划 ----------------
+ * 按热量档分池：早餐取低档、午餐取中/高档、晚餐取中/低档；
+ * 允许份量系数(1~3)使三餐总热量落在 target±15%；同日三道菜不重复；
+ * 周计划对已用菜谱加权惩罚，使主菜尽量不重复；按日期做种子，同日结果确定。
+ */
+function pickDayPlan(recipes, target, rng, usedCount) {
+  const lo = target * 0.85;
+  const hi = target * 1.15;
+  let bPool = recipes.filter((r) => r.calorie_tier === '低' || r.kcal <= 250);
+  let lPool = recipes.filter((r) => (r.calorie_tier === '中' || r.calorie_tier === '高') && r.kcal >= 250);
+  let dPool = recipes.filter((r) => (r.calorie_tier === '中' || r.calorie_tier === '低') && r.kcal <= 500);
+  if (bPool.length < 3) bPool = recipes.slice().sort((a, b) => a.kcal - b.kcal).slice(0, 6);
+  if (lPool.length < 3) lPool = recipes.slice().sort((a, b) => b.kcal - a.kcal).slice(0, 8);
+  if (dPool.length < 3) dPool = recipes.slice().sort((a, b) => a.kcal - b.kcal).slice(0, 8);
+  const SERVINGS = [1, 1, 1, 1.5, 1.5, 2, 2.5, 3]; // 重复元素=加权，偏向 1 份
+  const sp = (s) => (s === 1 ? 0 : s === 1.5 ? 20 : s === 2 ? 50 : 90);
+  const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+  const reuse = (r) => usedCount.get(r.id) || 0;
+  let best = null;
+  for (let i = 0; i < 500; i++) {
+    const b = pick(bPool); const l = pick(lPool); const d = pick(dPool);
+    if (b.id === l.id || l.id === d.id || b.id === d.id) continue;
+    for (const sb of SERVINGS) {
+      const cb = b.kcal * sb;
+      for (const sl of SERVINGS) {
+        const cl = l.kcal * sl;
+        for (const sd of SERVINGS) {
+          const total = cb + cl + d.kcal * sd;
+          if (total < lo || total > hi) continue;
+          const score = Math.abs(total - target) + (reuse(b) + reuse(l) + reuse(d)) * 400 + sp(sb) + sp(sl) + sp(sd);
+          if (!best || score < best.score) best = { b, l, d, sb, sl, sd, total, score };
+        }
+      }
+    }
+  }
+  if (!best) {
+    // 兜底：只取各池热量最高的前 8 道做有限组合（8³×SERVINGS，毫秒级；全量穷举在 150+ 道菜时会卡死）
+    const top = (arr, n) => arr.slice().sort((a, b) => b.kcal - a.kcal).slice(0, n);
+    const bTop = top(bPool, 8);
+    const lTop = top(lPool, 8);
+    const dTop = top(dPool, 8);
+    for (const b of bTop) {
+      for (const l of lTop) {
+        for (const d of dTop) {
+          if (b.id === l.id || l.id === d.id || b.id === d.id) continue;
+          for (const sb of SERVINGS) {
+            for (const sl of SERVINGS) {
+              for (const sd of SERVINGS) {
+                const total = b.kcal * sb + l.kcal * sl + d.kcal * sd;
+                const score = Math.abs(total - target) + (reuse(b) + reuse(l) + reuse(d)) * 400 + sp(sb) + sp(sl) + sp(sd);
+                if (!best || score < best.score) best = { b, l, d, sb, sl, sd, total, score };
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return best;
+}
+function parseTarget(query) {
+  const raw = query.get('target');
+  if (raw === null) return 2000;
+  const t = Number(raw);
+  if (!Number.isFinite(t) || t < 500 || t > 6000) throw bad('target 需为 500-6000 的热量值(千卡)');
+  return t;
+}
+
+/* ---------------- 点赞/收藏 ---------------- */
+
+function toggleLike(user, id, on) {
+  const r = db.prepare('SELECT id FROM recipes WHERE id = ?').get(id);
+  if (!r) throw new HttpError(404, 'recipe_not_found');
+  if (on) {
+    const ret = db.prepare('INSERT OR IGNORE INTO likes (user_id, recipe_id) VALUES (?, ?)').run(user.id, id);
+    if (Number(ret.changes) > 0) db.prepare('UPDATE recipes SET like_count = like_count + 1 WHERE id = ?').run(id);
+  } else {
+    const ret = db.prepare('DELETE FROM likes WHERE user_id = ? AND recipe_id = ?').run(user.id, id);
+    if (Number(ret.changes) > 0) db.prepare('UPDATE recipes SET like_count = MAX(like_count - 1, 0) WHERE id = ?').run(id);
+  }
+  const cnt = Number(db.prepare('SELECT like_count FROM recipes WHERE id = ?').get(id).like_count);
+  return { ok: true, liked: on, like_count: cnt };
+}
+function toggleFavorite(user, id, on) {
+  const r = db.prepare('SELECT id FROM recipes WHERE id = ?').get(id);
+  if (!r) throw new HttpError(404, 'recipe_not_found');
+  if (on) {
+    const ret = db.prepare('INSERT OR IGNORE INTO favorites (user_id, recipe_id) VALUES (?, ?)').run(user.id, id);
+    if (Number(ret.changes) > 0) db.prepare('UPDATE recipes SET favorite_count = favorite_count + 1 WHERE id = ?').run(id);
+  } else {
+    const ret = db.prepare('DELETE FROM favorites WHERE user_id = ? AND recipe_id = ?').run(user.id, id);
+    if (Number(ret.changes) > 0) db.prepare('UPDATE recipes SET favorite_count = MAX(favorite_count - 1, 0) WHERE id = ?').run(id);
+  }
+  const cnt = Number(db.prepare('SELECT favorite_count FROM recipes WHERE id = ?').get(id).favorite_count);
+  return { ok: true, favorited: on, favorite_count: cnt };
+}
+
+/* ---------------- 社区 ---------------- */
+
+const POST_SELECT = `SELECT p.*, u.nickname,
+  (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count
+  FROM posts p LEFT JOIN users u ON u.id = p.user_id`;
+function postOut(row) {
+  let images = [];
+  try { images = JSON.parse(row.image_urls_json || '[]'); } catch { }
+  return {
+    id: row.id, user_id: row.user_id, nickname: row.nickname, text: row.text,
+    image_urls: images, recipe_id: row.recipe_id, city: row.city,
+    comment_count: Number(row.comment_count || 0), created_at: row.created_at,
+  };
+}
+
+/* ---------------- LLM（凭据只在 secrets 文件里） ---------------- */
+
+let _secrets = null;
+function llmSecrets() {
+  if (_secrets) return _secrets;
+  try {
+    const s = JSON.parse(fs.readFileSync(SECRETS_PATH, 'utf8'));
+    if (!s.endpoint || !s.key || !s.model) throw new Error('incomplete');
+    _secrets = s;
+    return s;
+  } catch {
+    throw new HttpError(502, 'llm_not_configured', '无法读取 LLM 配置文件');
+  }
+}
+async function llmChat(messages, maxTokens, timeoutMs = 90000) {
+  const s = llmSecrets();
+  let attemptMax = maxTokens;
+  // 推理模型的思维链会消耗 max_tokens：若正式回答被截断为空，自动加大 token 重试（最多 2 次）
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let r;
+    try {
+      r = await fetch(s.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.key },
+        body: JSON.stringify({ model: s.model, messages, max_tokens: attemptMax, temperature: 0.2, stream: false }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (e) {
+      throw new HttpError(502, 'llm_request_failed', String((e && e.message) || e));
+    }
+    const text = await r.text();
+    if (!r.ok) throw new HttpError(502, 'llm_request_failed', '上游状态码 ' + r.status);
+    let data;
+    try { data = JSON.parse(text); } catch { throw new HttpError(502, 'llm_bad_response', '上游返回非 JSON'); }
+    const choice = data && data.choices && data.choices[0];
+    const msg = choice && choice.message;
+    if (!msg || typeof msg.content !== 'string') throw new HttpError(502, 'llm_bad_response', '上游缺少 message.content');
+    if (msg.content.trim() === '' && choice.finish_reason === 'length' && attempt < 2) {
+      attemptMax = Math.min(attemptMax * 2, 16384);
+      continue;
+    }
+    return msg; // 注意：推理模型可能有 reasoning_content 字段，答案在 content
+  }
+  throw new HttpError(502, 'llm_bad_response', '模型输出为空（已尝试加大 token）');
+}
+/* 从模型输出中提取 JSON（容忍 markdown 代码块、前后缀文字） */
+function extractJSON(text) {
+  const t = String(text);
+  const fc = t.indexOf('{');
+  const fs2 = t.indexOf('[');
+  let start, open, close;
+  if (fs2 !== -1 && (fc === -1 || fs2 < fc)) { start = fs2; open = '['; close = ']'; }
+  else if (fc !== -1) { start = fc; open = '{'; close = '}'; }
+  else return null;
+  const end = t.lastIndexOf(close);
+  if (end <= start) return null;
+  try { return JSON.parse(t.slice(start, end + 1)); } catch { return null; }
+}
+
+/* ---------------- B站菜谱视频教程搜索 ----------------
+ * 链路：菜谱名 -> 内存/SQLite 缓存(24h) -> B站搜索(wbi 签名 + buvid3 cookie) -> 校验解析 -> 写缓存
+ * 出站限流：固定 60s 窗口，最多 10 次（nav/spi/search 均计入）；超限直接走跳转兜底。
+ * 任何上游失败（风控/改版/网络/解析）一律静默降级：items:[] + fallback，绝不报错。
+ */
+const BILI_SEARCH_URL = 'https://api.bilibili.com/x/web-interface/search/type';
+const BILI_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  'Referer': 'https://www.bilibili.com/',
+  'Origin': 'https://www.bilibili.com',
+  'Accept': 'application/json, text/plain, */*',
+};
+const BILI_TIMEOUT_MS = 8000;
+const VIDEO_CACHE_TTL_MS = 24 * 3600 * 1000;   // 缓存 24 小时
+const BILI_RATE_MAX = 10;                      // 每分钟最多向上游发起 10 次请求
+const BILI_RATE_WINDOW_MS = 60 * 1000;
+const VIDEO_ITEM_LIMIT = 10;                   // 只取前 10 条
+const VIDEO_AD_RE = /加微信|加v信|代做|代写|网课|私聊|领券|优惠券|培训机构|广告/; // 过滤明显无关广告（宽松，宁漏勿误）
+
+/* B站时长字符串规范化：'5:6' → '5:06'，'1:2:3' → '1:02:03' */
+function formatDuration(d) {
+  const parts = String(d || '').split(':').map((x) => parseInt(x, 10));
+  if (!parts.length || parts.some((x) => !Number.isFinite(x))) return String(d || '');
+  if (parts.length === 3) return `${parts[0]}:${String(parts[1]).padStart(2, '0')}:${String(parts[2]).padStart(2, '0')}`;
+  if (parts.length === 2) return `${parts[0]}:${String(parts[1]).padStart(2, '0')}`;
+  return String(d || '');
+}
+
+let biliRateStart = 0;
+let biliRateCount = 0;
+function biliAcquire() { // 需要出站请求时先取配额；false = 本窗口已超限
+  const now = Date.now();
+  if (now - biliRateStart >= BILI_RATE_WINDOW_MS) { biliRateStart = now; biliRateCount = 0; }
+  if (biliRateCount >= BILI_RATE_MAX) return false;
+  biliRateCount++;
+  return true;
+}
+
+/* wbi 签名（B站 2024 后搜索接口要求 w_rid&wts） */
+const MIXIN_KEY_ENC_TAB = [
+  46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49,
+  33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40,
+  61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11,
+  36, 20, 34, 44, 52,
+];
+function getMixinKey(orig) {
+  let str = '';
+  for (const i of MIXIN_KEY_ENC_TAB) str += orig[i] ?? '';
+  return str.slice(0, 32);
+}
+function wbiSignQuery(params, imgKey, subKey) {
+  // 返回已编码的 query 串（排序 -> 拼 mixin_key -> MD5），发送与签名用同一编码，避免二义
+  const mixinKey = getMixinKey(imgKey + subKey);
+  const wts = Math.floor(Date.now() / 1000);
+  const p = { ...params, wts };
+  for (const k of Object.keys(p)) p[k] = String(p[k]).replace(/[!'()*]/g, '');
+  const enc = (s) => encodeURIComponent(s).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+  const query = Object.keys(p).sort().map((k) => enc(k) + '=' + enc(p[k])).join('&');
+  const wRid = crypto.createHash('md5').update(query + mixinKey).digest('hex');
+  return query + '&w_rid=' + wRid + '&wts=' + wts;
+}
+
+/* wbi key 内存缓存（1 小时；nav 未登录 code=-101 但 wbi_img 仍返回） */
+let biliWbi = { keys: null, at: 0 };
+function wbiKeyFromUrl(u) { const m = /\/(\w+)\.(?:png|jpg)/.exec(String(u || '')); return m ? m[1] : ''; }
+async function biliWbiKeys() {
+  if (biliWbi.keys && Date.now() - biliWbi.at < 3600 * 1000) return biliWbi.keys;
+  if (!biliAcquire()) return null;
+  const r = await fetch('https://api.bilibili.com/x/web-interface/nav', { headers: BILI_HEADERS, signal: AbortSignal.timeout(BILI_TIMEOUT_MS) });
+  const d = await r.json();
+  const img = wbiKeyFromUrl(d && d.data && d.data.wbi_img && d.data.wbi_img.img_url);
+  const sub = wbiKeyFromUrl(d && d.data && d.data.wbi_img && d.data.wbi_img.sub_url);
+  if (!img || !sub) throw new Error('nav missing wbi_img');
+  biliWbi = { keys: { img, sub }, at: Date.now() };
+  return biliWbi.keys;
+}
+
+/* buvid3 cookie：优先 finger/spi 获取，失败用随机值（实测均可用）；进程内复用 */
+let biliCookie = '';
+async function biliCookieValue() {
+  if (biliCookie) return biliCookie;
+  try {
+    if (biliAcquire()) {
+      const r = await fetch('https://api.bilibili.com/x/frontend/finger/spi', { headers: BILI_HEADERS, signal: AbortSignal.timeout(BILI_TIMEOUT_MS) });
+      const d = await r.json();
+      if (d && d.code === 0 && d.data && d.data.b_3) {
+        biliCookie = 'buvid3=' + d.data.b_3 + (d.data.b_4 ? '; buvid4=' + d.data.b_4 : '');
+        return biliCookie;
+      }
+    }
+  } catch { /* fallthrough */ }
+  return 'buvid3=' + crypto.randomBytes(16).toString('hex').toUpperCase() + 'infoc';
+}
+
+function decodeHTMLText(s) {
+  return String(s)
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#x27;/gi, "'");
+}
+function biliParseItems(data) {
+  const arr = data && data.data && Array.isArray(data.data.result) ? data.data.result : [];
+  const items = [];
+  for (const it of arr) {
+    if (!it || !it.bvid || !it.title) continue;
+    const title = decodeHTMLText(String(it.title).replace(/<em class="keyword">/g, '').replace(/<\/em>/g, ''))
+      .replace(/\s+/g, ' ').trim();
+    if (!title || VIDEO_AD_RE.test(title)) continue;
+    let pic = String(it.pic || '');
+    if (pic.startsWith('//')) pic = 'https:' + pic;
+    else if (pic.startsWith('http://')) pic = 'https://' + pic.slice(7);
+    items.push({
+      title,
+      author: String(it.author || '').trim(),
+      duration: formatDuration(String(it.duration || '').trim()),
+      bvid: String(it.bvid),
+      play_url: 'https://www.bilibili.com/video/' + it.bvid,
+      cover: pic,
+      view_count: Number(it.play) > 0 ? Number(it.play) : 0,
+    });
+    if (items.length >= VIDEO_ITEM_LIMIT) break;
+  }
+  return items;
+}
+
+/* 单次搜索：wbi 主路径失败时回退纯接口；全部失败返回 ok:false（由上层降级） */
+async function biliSearchVideos(keyword) {
+  const params = { search_type: 'video', keyword };
+  const tryFetch = async (url) => {
+    if (!biliAcquire()) return null; // 超限：不发请求
+    const r = await fetch(url, { headers: { ...BILI_HEADERS, Cookie: await biliCookieValue() }, signal: AbortSignal.timeout(BILI_TIMEOUT_MS) });
+    const text = await r.text();     // 先 text 再 parse，容忍非 JSON 改版
+    let data = null;
+    try { data = JSON.parse(text); } catch { }
+    return { httpStatus: r.status, data };
+  };
+  // 主路径：wbi 签名
+  try {
+    const keys = await biliWbiKeys();
+    if (keys) {
+      const r = await tryFetch(BILI_SEARCH_URL + '?' + wbiSignQuery(params, keys.img, keys.sub));
+      if (r && r.data && r.data.code === 0) return { ok: true, items: biliParseItems(r.data) };
+      if (r && (r.httpStatus === 412 || (r.data && r.data.code === -412))) {
+        biliCookie = ''; biliWbi = { keys: null, at: 0 }; // 疑似风控：重置凭据，下次重新获取
+      }
+    }
+  } catch { /* fallthrough */ }
+  // 备选：无 wbi 纯接口（实测当前可通；B站收紧后失效则整体降级）
+  try {
+    const q = Object.keys(params).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(params[k])).join('&');
+    const r = await tryFetch(BILI_SEARCH_URL + '?' + q);
+    if (r && r.data && r.data.code === 0) return { ok: true, items: biliParseItems(r.data) };
+  } catch { /* fallthrough */ }
+  return { ok: false, items: [] };
+}
+
+function videoCacheGet(name) {
+  try {
+    const row = db.prepare('SELECT items_json, fetched_at FROM video_cache WHERE recipe_name = ?').get(name);
+    if (!row) return null;
+    const t = Date.parse(row.fetched_at);
+    if (!Number.isFinite(t) || Date.now() - t > VIDEO_CACHE_TTL_MS) return null;
+    const items = JSON.parse(row.items_json);
+    return Array.isArray(items) ? items : null;
+  } catch { return null; }
+}
+function videoCachePut(name, items) {
+  try {
+    db.prepare('INSERT OR REPLACE INTO video_cache (recipe_name, items_json, fetched_at) VALUES (?, ?, ?)')
+      .run(name, JSON.stringify(items), new Date().toISOString());
+  } catch (e) { console.error('[videos] cache write failed:', (e && e.message) || e); }
+}
+
+
+/* ---------------- 路由 ---------------- */
+
+const routes = [];
+function route(method, pattern, auth, handler) {
+  routes.push({ method, regex: new RegExp('^' + pattern + '$'), auth, handler });
+}
+
+/* --- 健康检查 --- */
+route('GET', '/api/health', false, ({ res }) => {
+  let recipes = 0;
+  try { recipes = Number(db.prepare('SELECT COUNT(*) AS c FROM recipes').get().c); } catch { }
+  sendJSON(res, 200, {
+    ok: true, service: 'shiguang-backend', version: 'm1.0.0',
+    time: new Date().toISOString(), uptime_sec: Math.floor((Date.now() - START_TS) / 1000),
+    storage: 'sqlite', recipes,
+  });
+});
+
+/* --- 认证（测试模式：验证码固定 888888） --- */
+route('POST', '/api/auth/request-code', false, ({ res, body }) => {
+  const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+  if (!/^1\d{10}$/.test(phone)) throw bad('phone 必须为 11 位手机号');
+  sendJSON(res, 200, { ok: true, test_mode: true, dev_code: '888888', expires_in: 600, message: '测试模式：验证码固定为 888888' });
+});
+
+route('POST', '/api/auth/login', false, ({ res, body }) => {
+  const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+  if (!/^1\d{10}$/.test(phone)) throw bad('phone 必须为 11 位手机号');
+  const code = typeof body.code === 'string' ? body.code.trim() : '';
+  if (!code) throw bad('code 不能为空');
+  if (code !== '888888') throw new HttpError(401, 'invalid_code', '验证码错误或已过期');
+  let user = db.prepare('SELECT * FROM users WHERE phone = ?').get(phone);
+  if (!user) {
+    db.prepare('INSERT INTO users (phone, nickname) VALUES (?, ?)').run(phone, '食光用户' + phone.slice(-4));
+    user = db.prepare('SELECT * FROM users WHERE phone = ?').get(phone);
+  }
+  const token = crypto.randomBytes(32).toString('hex');
+  db.prepare("INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now','localtime','+30 days'))").run(token, user.id);
+  sendJSON(res, 200, { ok: true, token, user: publicUser(user) });
+});
+
+/* --- 个人档案 --- */
+route('GET', '/api/me', true, ({ res, user }) => {
+  sendJSON(res, 200, { user: publicUser(user), profile: healthProfile(user) });
+});
+
+route('PUT', '/api/me', true, ({ res, user, body }) => {
+  const updates = {};
+  if (body.nickname !== undefined) {
+    if (typeof body.nickname !== 'string' || body.nickname.trim().length > 30) throw bad('nickname 需为不超过 30 字的字符串');
+    updates.nickname = body.nickname.trim();
+  }
+  if (body.gender !== undefined) {
+    if (body.gender !== 'm' && body.gender !== 'f') throw bad("gender 只能为 'm' 或 'f'");
+    updates.gender = body.gender;
+  }
+  if (body.age !== undefined) {
+    const age = Number(body.age);
+    if (!Number.isInteger(age) || age < 1 || age > 120) throw bad('age 需为 1-120 的整数');
+    updates.age = age;
+  }
+  if (body.height_cm !== undefined) {
+    const h = Number(body.height_cm);
+    if (!isNum(h) || h < 50 || h > 250) throw bad('height_cm 需在 50-250 之间');
+    updates.height_cm = h;
+  }
+  if (body.weight_kg !== undefined) {
+    const w = Number(body.weight_kg);
+    if (!isNum(w) || w < 20 || w > 300) throw bad('weight_kg 需在 20-300 之间');
+    updates.weight_kg = w;
+  }
+  if (body.activity !== undefined) {
+    const a = parseActivity(body.activity);
+    if (a === null) throw bad('activity 需为 1.2~1.9 的系数或枚举(sedentary/light/moderate/active/very_active)');
+    updates.activity = a;
+  }
+  if (body.goal !== undefined) {
+    if (body.goal !== 'lose' && body.goal !== 'keep' && body.goal !== 'gain') throw bad("goal 只能为 'lose'/'keep'/'gain'");
+    updates.goal = body.goal;
+  }
+  const keys = Object.keys(updates);
+  if (keys.length) {
+    const setSQL = keys.map((k) => `${k} = ?`).join(', ');
+    db.prepare(`UPDATE users SET ${setSQL} WHERE id = ?`).run(...keys.map((k) => nullish(updates[k])), user.id);
+  }
+  const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+  sendJSON(res, 200, { ok: true, user: publicUser(fresh), profile: healthProfile(fresh) });
+});
+
+/* --- 菜谱列表/详情/搜索 --- */
+route('GET', '/api/recipes', false, ({ req, res, query }) => {
+  const q = (query.get('q') || '').trim();
+  const category = (query.get('category') || '').trim();
+  let page = Number(query.get('page') || 1);
+  if (!Number.isInteger(page) || page < 1) page = 1;
+  const where = [];
+  const args = [];
+  if (q) {
+    const pat = '%' + q.replace(/[\\%_]/g, (c) => '\\' + c) + '%';
+    where.push("(name LIKE ? ESCAPE '\\' OR ingredients_json LIKE ? ESCAPE '\\')");
+    args.push(pat, pat);
+  }
+  if (category) { where.push('category = ?'); args.push(category); }
+  const whereSQL = where.length ? 'WHERE ' + where.join(' AND ') : '';
+  const total = Number(db.prepare(`SELECT COUNT(*) AS c FROM recipes ${whereSQL}`).get(...args).c);
+  const rows = db.prepare(`SELECT * FROM recipes ${whereSQL} ORDER BY id LIMIT ? OFFSET ?`)
+    .all(...args, PAGE_SIZE, (page - 1) * PAGE_SIZE);
+  const optUser = getUserByToken(req);
+  const sm = userStateMap(optUser && optUser.id, rows.map((r) => r.id));
+  sendJSON(res, 200, {
+    items: rows.map((r) => recipeOut(r, sm.get(r.id))), page, page_size: PAGE_SIZE, total,
+    total_pages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+  });
+});
+
+/* 全家餐桌：聚合"我"与全部家庭成员的每日目标；返回 targets 数组与合计 */
+function familyTargets(user) {
+  if (!user) return { parts: [], total: 0 };
+  const parts = [];
+  const myP = healthProfile(user);
+  if (isNum(myP.target_calories)) parts.push({ name: user.nickname || '我', target: Math.round(myP.target_calories) });
+  const fam = db.prepare('SELECT * FROM family_members WHERE owner_user_id = ?').all(user.id);
+  for (const m of fam) {
+    const mp = memberProfile(m);
+    if (isNum(mp.target_calories)) parts.push({ name: m.name, target: Math.round(mp.target_calories) });
+  }
+  const total = parts.reduce((s, p) => s + p.target, 0);
+  return { parts, total };
+}
+
+/* --- 每日三餐推荐（family=1 时按全家目标合计规划） --- */
+route('GET', '/api/recipes/daily', false, ({ req, res, query }) => {
+  const date = (query.get('date') || localToday()).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(new Date(date + 'T12:00:00').getTime())) {
+    throw bad('date 格式需为 YYYY-MM-DD');
+  }
+  let target = parseTarget(query);
+  let breakdown = null;
+  if (query.get('family') === '1') {
+    const ft = familyTargets(getUserByToken(req));
+    if (ft.total >= 600) {
+      target = ft.total;
+      breakdown = ft.parts;
+    }
+  }
+  const reroll = (query.get('seed') || '').trim(); // 换一换：客户端传随机 seed 即可重摇
+  const recipes = loadAllRecipes();
+  if (recipes.length < 3) throw new HttpError(503, 'not_enough_recipes', '菜谱库不足');
+  const plan = pickDayPlan(recipes, target, rngFrom(`daily|${date}|${target}${reroll ? '|' + reroll : ''}`), new Map());
+  sendJSON(res, 200, {
+    date, target, reroll: reroll || null, breakdown,
+    range: { lo: round2(target * 0.85), hi: round2(target * 1.15) },
+    total_kcal: round2(plan.total),
+    within_range: plan.total >= target * 0.85 && plan.total <= target * 1.15,
+    meals: {
+      breakfast: mealOut(plan.b, plan.sb),
+      lunch: mealOut(plan.l, plan.sl),
+      dinner: mealOut(plan.d, plan.sd),
+    },
+  });
+});
+
+/* --- 7 天排餐（family=1 时按全家目标合计规划） --- */
+route('GET', '/api/recipes/weekly', false, ({ req, res, query }) => {
+  let target = parseTarget(query);
+  let breakdown = null;
+  if (query.get('family') === '1') {
+    const ft = familyTargets(getUserByToken(req));
+    if (ft.total >= 600) {
+      target = ft.total;
+      breakdown = ft.parts;
+    }
+  }
+  const start = localToday();
+  const recipes = loadAllRecipes();
+  if (recipes.length < 3) throw new HttpError(503, 'not_enough_recipes', '菜谱库不足');
+  const usedCount = new Map();
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const date = addDays(start, i);
+    const plan = pickDayPlan(recipes, target, rngFrom(`weekly|${start}|${target}|${i}`), usedCount);
+    for (const r of [plan.b, plan.l, plan.d]) usedCount.set(r.id, (usedCount.get(r.id) || 0) + 1);
+    days.push({
+      date, weekday: WEEKDAY_CN[new Date(date + 'T12:00:00').getDay()],
+      total_kcal: round2(plan.total),
+      within_range: plan.total >= target * 0.85 && plan.total <= target * 1.15,
+      meals: {
+        breakfast: mealOut(plan.b, plan.sb),
+        lunch: mealOut(plan.l, plan.sl),
+        dinner: mealOut(plan.d, plan.sd),
+      },
+    });
+  }
+  sendJSON(res, 200, { start_date: start, target, breakdown, days });
+});
+
+/* --- 菜谱详情（浏览数 +1；带当前用户的点赞/收藏状态） --- */
+route('GET', '/api/recipes/(\\d+)', false, ({ req, res, m }) => {
+  const id = Number(m[1]);
+  const row = db.prepare('SELECT * FROM recipes WHERE id = ?').get(id);
+  if (!row) throw new HttpError(404, 'recipe_not_found');
+  db.prepare('UPDATE recipes SET views = views + 1 WHERE id = ?').run(id);
+  row.views = Number(row.views) + 1;
+  const optUser = getUserByToken(req);
+  const sm = userStateMap(optUser && optUser.id, [id]);
+  sendJSON(res, 200, { item: recipeOut(row, sm.get(id)) });
+});
+
+/* --- 菜谱视频教程（B站搜索；带缓存/限流/降级，任何上游失败都走跳转兜底不报错） --- */
+route('GET', '/api/recipes/(\\d+)/videos', false, async ({ res, m }) => {
+  const row = db.prepare('SELECT name FROM recipes WHERE id = ?').get(Number(m[1]));
+  if (!row) throw new HttpError(404, 'recipe_not_found');
+  const name = String(row.name).trim();
+  const fallback = 'https://search.bilibili.com/all?keyword=' + encodeURIComponent(name);
+  const hit = videoCacheGet(name);
+  if (hit) return sendJSON(res, 200, { ok: true, items: hit, source: 'bilibili', cached: true, fallback });
+  let items = [];
+  let source = 'none';
+  try {
+    const r = await biliSearchVideos(name);
+    if (r.ok) {
+      items = r.items;
+      source = 'bilibili';
+      videoCachePut(name, items); // 只缓存成功结果（含上游确实搜不到的空结果）
+    }
+  } catch (e) {
+    console.error('[videos] bilibili search failed:', (e && e.message) || e);
+  }
+  sendJSON(res, 200, { ok: true, items, source, cached: false, fallback });
+});
+
+/* --- 食材模糊联想：聚合全部菜谱的食材名，前缀优先 + 包含匹配 --- */
+let _ingIndex = null;
+function ingredientIndex() {
+  if (_ingIndex) return _ingIndex;
+  const set = new Set();
+  for (const r of loadAllRecipes()) {
+    try {
+      for (const i of JSON.parse(r.ingredients_json)) {
+        const n = String(i.name || '').trim();
+        if (n) set.add(n);
+      }
+    } catch { }
+  }
+  _ingIndex = [...set].sort();
+  return _ingIndex;
+}
+
+route('GET', '/api/ingredients/suggest', true, ({ res, query }) => {
+  const q = (query.get('q') || '').trim();
+  if (!q) { sendJSON(res, 200, { items: [] }); return; }
+  const idx = ingredientIndex();
+  const starts = idx.filter((n) => n.startsWith(q));
+  const contains = idx.filter((n) => !n.startsWith(q) && n.includes(q));
+  sendJSON(res, 200, { items: [...starts, ...contains].slice(0, 8) });
+});
+
+/* --- 家庭成员：多人健康档案；体脂率等权威数据选填，填了用更准的算法 --- */
+
+function memberProfile(m) {
+  const p = { id: m.id, name: m.name };
+  if (isNum(m.height_cm) && isNum(m.weight_kg)) {
+    const h = m.height_cm / 100;
+    p.bmi = round2(m.weight_kg / (h * h));
+    if (Number.isInteger(m.age) && (m.gender === 'm' || m.gender === 'f')) {
+      let bmr;
+      let method;
+      if (isNum(m.body_fat_pct) && m.body_fat_pct > 3 && m.body_fat_pct < 65) {
+        // Katch-McArdle：按瘦体重算，有实测体脂率时更准
+        const lbm = m.weight_kg * (1 - m.body_fat_pct / 100);
+        bmr = 370 + 21.6 * lbm;
+        method = 'katch-mcardle';
+      } else {
+        // Mifflin-St Jeor：默认公式
+        bmr = 10 * m.weight_kg + 6.25 * m.height_cm - 5 * m.age + (m.gender === 'm' ? 5 : -161);
+        method = 'mifflin-st-jeor';
+      }
+      p.bmr = round2(bmr);
+      const act = isNum(m.activity) ? m.activity : 1.2;
+      p.activity_factor = act;
+      p.tdee = round2(bmr * act);
+      const goal = m.goal || 'keep';
+      p.goal = goal;
+      p.target_calories = round2(goal === 'lose' ? p.tdee - 400 : goal === 'gain' ? p.tdee + 300 : p.tdee);
+      p.target_rule = goal === 'lose' ? 'TDEE-400' : goal === 'gain' ? 'TDEE+300' : 'TDEE';
+      p.method = method;
+    }
+  }
+  return p;
+}
+function memberOut(m) {
+  return { ...m, metrics: memberProfile(m) };
+}
+function memberBody(body, requireName) {
+  const out = {};
+  if (requireName || body.name !== undefined) {
+    const name = String(body.name || '').trim();
+    if (!name || name.length > 20) throw bad('name 必填且不超过 20 字');
+    out.name = name;
+  }
+  if (body.gender !== undefined && body.gender !== null) {
+    if (body.gender !== 'm' && body.gender !== 'f') throw bad("gender 只能为 'm'/'f'");
+    out.gender = body.gender;
+  }
+  if (body.age !== undefined && body.age !== null) {
+    const a = Number(body.age);
+    if (!Number.isInteger(a) || a < 1 || a > 120) throw bad('age 需为 1-120 整数');
+    out.age = a;
+  }
+  if (body.height_cm !== undefined && body.height_cm !== null) {
+    const h = Number(body.height_cm);
+    if (!isNum(h) || h < 50 || h > 250) throw bad('height_cm 需在 50-250 之间');
+    out.height_cm = h;
+  }
+  if (body.weight_kg !== undefined && body.weight_kg !== null) {
+    const w = Number(body.weight_kg);
+    if (!isNum(w) || w < 5 || w > 400) throw bad('weight_kg 需在 5-400 之间');
+    out.weight_kg = w;
+  }
+  if (body.body_fat_pct !== undefined && body.body_fat_pct !== null) {
+    const b = Number(body.body_fat_pct);
+    if (!isNum(b) || b < 3 || b > 65) throw bad('body_fat_pct 需在 3-65 之间');
+    out.body_fat_pct = b;
+  }
+  if (body.activity !== undefined && body.activity !== null) {
+    const a = parseActivity(body.activity);
+    if (a === null) throw bad('activity 需为 1.2~1.9 系数或枚举');
+    out.activity = a;
+  }
+  if (body.goal !== undefined && body.goal !== null) {
+    if (!['lose', 'keep', 'gain'].includes(body.goal)) throw bad("goal 只能是 lose/keep/gain");
+    out.goal = body.goal;
+  }
+  return out;
+}
+
+route('GET', '/api/family', true, ({ res, user }) => {
+  const rows = db.prepare('SELECT * FROM family_members WHERE owner_user_id = ? ORDER BY id').all(user.id);
+  sendJSON(res, 200, { items: rows.map(memberOut) });
+});
+route('POST', '/api/family', true, ({ res, user, body }) => {
+  const fields = memberBody(body, true);
+  const keys = Object.keys(fields);
+  const cols = ['owner_user_id', ...keys];
+  const vals = [user.id, ...keys.map((k) => fields[k])];
+  const info = db.prepare(`INSERT INTO family_members (${cols.join(',')}) VALUES (${cols.map(() => '?').join(',')})`).run(...vals);
+  const row = db.prepare('SELECT * FROM family_members WHERE id = ?').get(info.lastInsertRowid);
+  sendJSON(res, 200, { ok: true, item: memberOut(row) });
+});
+route('PUT', '/api/family/(\\d+)', true, ({ res, m, user, body }) => {
+  const row = db.prepare('SELECT * FROM family_members WHERE id = ? AND owner_user_id = ?').get(Number(m[1]), user.id);
+  if (!row) throw new HttpError(404, 'member_not_found');
+  const fields = memberBody(body, false);
+  const keys = Object.keys(fields);
+  if (keys.length) {
+    db.prepare(`UPDATE family_members SET ${keys.map((k) => k + ' = ?').join(', ')} WHERE id = ?`)
+      .run(...keys.map((k) => fields[k]), row.id);
+  }
+  const fresh = db.prepare('SELECT * FROM family_members WHERE id = ?').get(row.id);
+  sendJSON(res, 200, { ok: true, item: memberOut(fresh) });
+});
+route('DELETE', '/api/family/(\\d+)', true, ({ res, m, user }) => {
+  const info = db.prepare('DELETE FROM family_members WHERE id = ? AND owner_user_id = ?').run(Number(m[1]), user.id);
+  if (!info.changes) throw new HttpError(404, 'member_not_found');
+  sendJSON(res, 200, { ok: true });
+});
+
+/* --- 用户发布菜谱（AI 量化结果确认后入库，source='user'） --- */
+route('POST', '/api/recipes', true, ({ res, user, body }) => {
+  const name = String(body.name || '').trim();
+  if (!name || name.length > 30) throw bad('name 必填且不超过 30 字');
+  if (db.prepare('SELECT id FROM recipes WHERE name = ?').get(name)) {
+    throw new HttpError(409, 'recipe_exists', '菜谱库已有同名菜谱');
+  }
+  const intro = String(body.intro || '').trim().slice(0, 60);
+  const category = String(body.category || '家常小炒').trim().slice(0, 10) || '家常小炒';
+  const meatTag = body.meat_tag === '荤' ? '荤' : '素';
+  const difficulty = Math.min(3, Math.max(1, Math.round(Number(body.difficulty) || 1)));
+  const minutes = Math.min(600, Math.max(1, Math.round(Number(body.minutes) || 30)));
+  const kcal = Math.round(Number(body.nutrition && body.nutrition.kcal) || 0);
+  if (kcal < 10 || kcal > 2000) throw bad('nutrition.kcal 需在 10~2000 之间');
+  const tier = kcal <= 250 ? '低' : kcal <= 500 ? '中' : '高';
+  const protein = Math.max(0, Math.min(300, Number(body.nutrition && body.nutrition.protein) || 0));
+  const fat = Math.max(0, Math.min(300, Number(body.nutrition && body.nutrition.fat) || 0));
+  const carb = Math.max(0, Math.min(500, Number(body.nutrition && body.nutrition.carb) || 0));
+  const ingredients = (Array.isArray(body.ingredients) ? body.ingredients : [])
+    .map((i) => ({ name: String((i && i.name) || '').trim().slice(0, 20), amount: String((i && i.amount) || '').trim().slice(0, 30) }))
+    .filter((i) => i.name).slice(0, 25);
+  const steps = (Array.isArray(body.steps) ? body.steps : [])
+    .map((s) => String(s || '').trim().slice(0, 200)).filter(Boolean).slice(0, 25);
+  if (!ingredients.length) throw bad('ingredients 不能为空');
+  if (!steps.length) throw bad('steps 不能为空');
+  const info = db.prepare(`INSERT INTO recipes
+    (name, intro, category, meat_tag, difficulty, minutes, calorie_tier, ingredients_json, steps_json, kcal, protein, fat, carb, source)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'user')`)
+    .run(name, intro, category, meatTag, difficulty, minutes, tier, JSON.stringify(ingredients), JSON.stringify(steps), kcal, protein, fat, carb);
+  const row = db.prepare('SELECT * FROM recipes WHERE id = ?').get(info.lastInsertRowid);
+  _ingIndex = null; // 新菜谱入库后失效食材索引
+  sendJSON(res, 200, { ok: true, item: recipeOut(row, { liked: false, favorited: false }) });
+});
+
+/* --- 点赞/收藏（服务端计数 + 用户去重） --- */
+route('POST', '/api/recipes/(\\d+)/like', true, ({ res, m, user }) => sendJSON(res, 200, toggleLike(user, Number(m[1]), true)));
+route('DELETE', '/api/recipes/(\\d+)/like', true, ({ res, m, user }) => sendJSON(res, 200, toggleLike(user, Number(m[1]), false)));
+route('POST', '/api/recipes/(\\d+)/favorite', true, ({ res, m, user }) => sendJSON(res, 200, toggleFavorite(user, Number(m[1]), true)));
+route('DELETE', '/api/recipes/(\\d+)/favorite', true, ({ res, m, user }) => sendJSON(res, 200, toggleFavorite(user, Number(m[1]), false)));
+
+route('GET', '/api/me/favorites', true, ({ res, user }) => {
+  const rows = db.prepare(`SELECT r.*, f.created_at AS favorited_at FROM favorites f
+    JOIN recipes r ON r.id = f.recipe_id WHERE f.user_id = ? ORDER BY f.created_at DESC, r.id DESC`).all(user.id);
+  sendJSON(res, 200, { items: rows.map((r) => ({ ...recipeOut(r), favorited_at: r.favorited_at })) });
+});
+
+/* --- 用户食材柜（支持保质期：{items:[{name,shelf_life_days?}]} 或旧格式 {names:[...]}） --- */
+route('GET', '/api/me/ingredients', true, ({ res, user }) => {
+  const rows = db.prepare('SELECT name, shelf_life_days, created_at FROM user_ingredients WHERE user_id = ? ORDER BY rowid').all(user.id);
+  const items = rows.map((r) => {
+    let days_left = null;
+    if (r.shelf_life_days) {
+      const added = new Date(String(r.created_at).replace(' ', 'T'));
+      const expires = new Date(added.getTime() + Number(r.shelf_life_days) * 86400000);
+      days_left = Math.ceil((expires.getTime() - Date.now()) / 86400000);
+    }
+    return { name: r.name, shelf_life_days: r.shelf_life_days, days_left };
+  });
+  sendJSON(res, 200, {
+    items,
+    names: rows.map((r) => r.name),
+    alerts: items.filter((i) => i.days_left !== null && i.days_left <= 3),
+  });
+});
+
+route('PUT', '/api/me/ingredients', true, ({ res, user, body }) => {
+  // 两种入参：{names:[...]}（无保质期）或 {items:[{name, shelf_life_days?}]}
+  let items = [];
+  if (Array.isArray(body.items)) {
+    items = body.items
+      .map((i) => ({ name: String((i && i.name) || '').trim().slice(0, 30), shelf: Number(i && i.shelf_life_days) || null }))
+      .filter((i) => i.name);
+  } else if (Array.isArray(body.names)) {
+    items = body.names.map((x) => ({ name: String(x).trim(), shelf: null })).filter((i) => i.name);
+  } else {
+    throw bad('需要 names 或 items 数组');
+  }
+  // 同名去重（保留最后一个的保质期设置）
+  const uniq = new Map();
+  for (const i of items) uniq.set(i.name, i);
+  if (uniq.size > 200) throw bad('食材数量过多（≤200）');
+  db.exec('BEGIN');
+  try {
+    db.prepare('DELETE FROM user_ingredients WHERE user_id = ?').run(user.id);
+    const ins = db.prepare('INSERT OR IGNORE INTO user_ingredients (user_id, name, shelf_life_days) VALUES (?, ?, ?)');
+    for (const i of uniq.values()) ins.run(user.id, i.name, i.shelf);
+    db.exec('COMMIT');
+  } catch (e) { db.exec('ROLLBACK'); throw e; }
+  const rows = db.prepare('SELECT name FROM user_ingredients WHERE user_id = ? ORDER BY rowid').all(user.id);
+  sendJSON(res, 200, { ok: true, names: rows.map((r) => r.name) });
+});
+
+/* --- 按现有食材推荐 --- */
+const EXEMPT_INGREDIENTS = ['油', '盐', '糖', '生抽', '老抽', '醋', '料酒', '葱', '姜', '蒜', '鸡精', '白胡椒粉', '清水'];
+route('GET', '/api/recommend/by-ingredients', true, ({ res, user, query }) => {
+  const mode = query.get('mode');
+  if (mode !== 'strict' && mode !== 'best') throw bad("mode 必须为 'strict' 或 'best'");
+  const pantryRows = db.prepare('SELECT name FROM user_ingredients WHERE user_id = ?').all(user.id);
+  const pantry = new Set(pantryRows.map((r) => r.name));
+  const isExempt = (name) => EXEMPT_INGREDIENTS.some((t) => name.includes(t));
+  const items = [];
+  for (const row of loadAllRecipes()) {
+    let ings = [];
+    try { ings = JSON.parse(row.ingredients_json); } catch { }
+    const required = ings.map((i) => i.name).filter((n) => !isExempt(n));
+    const missing = required.filter((n) => !pantry.has(n));
+    const matched = required.length - missing.length;
+    if (mode === 'strict') {
+      if (missing.length === 0 && required.length > 0) {
+        items.push({ recipe: recipeOut(row), matched, required_total: required.length, missing: [] });
+      }
+    } else {
+      if (missing.length >= 1 && missing.length <= 2) {
+        items.push({ recipe: recipeOut(row), matched, required_total: required.length, missing });
+      }
+    }
+  }
+  if (mode === 'strict') {
+    items.sort((a, b) => (b.matched - a.matched) || (b.required_total - a.required_total));
+  } else {
+    items.sort((a, b) => (a.missing.length - b.missing.length) || (b.matched - a.matched));
+  }
+  sendJSON(res, 200, { mode, pantry: [...pantry], exempt: EXEMPT_INGREDIENTS, items });
+});
+
+/* --- 购物清单 --- */
+route('GET', '/api/shopping-list', true, ({ res, user }) => {
+  const rows = db.prepare('SELECT id, name, created_at FROM shopping_list WHERE user_id = ? ORDER BY id DESC').all(user.id);
+  sendJSON(res, 200, { items: rows });
+});
+
+route('POST', '/api/shopping-list', true, ({ res, user, body }) => {
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  if (!name || name.length > 30) throw bad('name 必填且不超过 30 字');
+  const ret = db.prepare('INSERT INTO shopping_list (user_id, name) VALUES (?, ?)').run(user.id, name);
+  const row = db.prepare('SELECT id, name, created_at FROM shopping_list WHERE id = ?').get(Number(ret.lastInsertRowid));
+  sendJSON(res, 200, { ok: true, item: row });
+});
+
+route('DELETE', '/api/shopping-list/(\\d+)', true, ({ res, m, user }) => {
+  const id = Number(m[1]);
+  const row = db.prepare('SELECT * FROM shopping_list WHERE id = ? AND user_id = ?').get(id, user.id);
+  if (!row) throw new HttpError(404, 'shopping_item_not_found');
+  db.prepare('DELETE FROM shopping_list WHERE id = ?').run(id);
+  // 删除 = 已购买，自动加入食材柜
+  const ins = db.prepare('INSERT OR IGNORE INTO user_ingredients (user_id, name) VALUES (?, ?)').run(user.id, row.name);
+  sendJSON(res, 200, { ok: true, purchased: row.name, added_to_pantry: Number(ins.changes) > 0 });
+});
+
+/* --- 排行榜（like+favorite+views，前 50；带完整营养与用户收藏态） --- */
+route('GET', '/api/leaderboard', false, ({ req, res }) => {
+  const rows = db.prepare(`SELECT id, name, intro, category, meat_tag, difficulty, minutes, calorie_tier,
+    ingredients_json, steps_json, kcal, protein, fat, carb, source, views, like_count, favorite_count,
+    (views + like_count + favorite_count) AS score FROM recipes ORDER BY score DESC, id ASC LIMIT 50`).all();
+  const optUser = getUserByToken(req);
+  const sm = userStateMap(optUser && optUser.id, rows.map((r) => r.id));
+  const items = rows.map((r) => recipeOut(r, sm.get(r.id)));
+  const me = optUser
+    ? { favorite_count: Number(db.prepare('SELECT COUNT(*) AS c FROM favorites WHERE user_id = ?').get(optUser.id).c) }
+    : null;
+  sendJSON(res, 200, { items, me });
+});
+
+/* --- 周报：过去 N 天每日推荐计划的热量曲线与贴合评分（daily 按日期确定性可复算） --- */
+route('GET', '/api/recipes/weekly-report', true, ({ req, res, query, user }) => {
+  let target = parseTarget(query);
+  if (query.get('family') === '1') {
+    const ft = familyTargets(user);
+    if (ft.total >= 600) target = ft.total;
+  }
+  const daysN = Math.min(14, Math.max(3, Number(query.get('days')) || 7));
+  const recipes = loadAllRecipes();
+  if (recipes.length < 3) throw new HttpError(503, 'not_enough_recipes', '菜谱库不足');
+  const list = [];
+  for (let i = daysN - 1; i >= 0; i--) {
+    const date = addDays(localToday(), -i);
+    const plan = pickDayPlan(recipes, target, rngFrom(`daily|${date}|${target}`), new Map());
+    list.push({
+      date,
+      total_kcal: round2(plan.total),
+      within_range: plan.total >= target * 0.85 && plan.total <= target * 1.15,
+      deviation: Math.round(plan.total - target),
+    });
+  }
+  const onTarget = list.filter((d) => d.within_range).length;
+  const avg = round2(list.reduce((s, d) => s + d.total_kcal, 0) / list.length);
+  // 评分：贴合天数占比 × 70 + 平均偏差越小越好（最多 30 分）
+  const devPenalty = Math.min(30, Math.abs(avg - target) / target * 100 * 1.5);
+  const score = Math.max(0, Math.min(100, Math.round((onTarget / list.length) * 70 + (30 - devPenalty))));
+  sendJSON(res, 200, {
+    ok: true, target, days: list, avg_kcal: avg,
+    on_target_days: onTarget, total_days: list.length, score,
+  });
+});
+
+/* --- 随机"今天吃啥"：随机一道菜（可按分类过滤） --- */
+route('GET', '/api/recipes/random', false, ({ res, query }) => {
+  const category = (query.get('category') || '').trim();
+  const rows = category
+    ? db.prepare('SELECT * FROM recipes WHERE category = ? ORDER BY RANDOM() LIMIT 1').all(category)
+    : db.prepare('SELECT * FROM recipes ORDER BY RANDOM() LIMIT 1').all();
+  if (!rows.length) throw new HttpError(404, 'recipe_not_found');
+  db.prepare('UPDATE recipes SET views = views + 1 WHERE id = ?').run(rows[0].id);
+  rows[0].views = Number(rows[0].views) + 1;
+  sendJSON(res, 200, { ok: true, item: recipeOut(rows[0], null) });
+});
+
+/* --- 菜品封面静态服务（Wikimedia 爬虫产物，仅允许 recipe-<id>.jpg 白名单格式） --- */
+route('GET', '/covers/([A-Za-z0-9._-]+)', false, ({ res, m }) => {
+  const file = m[1];
+  if (!/^recipe-\d+\.jpg$/.test(file)) throw new HttpError(404, 'not_found');
+  const p = path.join(COVER_DIR, file);
+  if (!fs.existsSync(p)) throw new HttpError(404, 'not_found');
+  res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=604800' });
+  res.end(fs.readFileSync(p));
+});
+
+/* --- 同城（按城市过滤 posts，骨架实现） --- */
+route('GET', '/api/nearby', false, ({ res, query }) => {
+  const city = (query.get('city') || '').trim();
+  if (!city) throw bad('city 必填');
+  const rows = db.prepare(`${POST_SELECT} WHERE p.city = ? ORDER BY p.id DESC LIMIT 50`).all(city);
+  sendJSON(res, 200, { city, items: rows.map(postOut) });
+});
+
+/* --- 社区动态（骨架实现） --- */
+route('POST', '/api/posts', true, ({ res, user, body }) => {
+  const text = typeof body.text === 'string' ? body.text.trim() : '';
+  if (!text || text.length > 2000) throw bad('text 必填且不超过 2000 字');
+  let recipeId = null;
+  if (body.recipe_id !== undefined && body.recipe_id !== null) {
+    recipeId = Number(body.recipe_id);
+    if (!Number.isInteger(recipeId) || !db.prepare('SELECT id FROM recipes WHERE id = ?').get(recipeId)) {
+      throw bad('recipe_id 不存在');
+    }
+  }
+  let imageUrls = [];
+  if (body.image_urls !== undefined) {
+    if (!Array.isArray(body.image_urls) || body.image_urls.length > 9
+      || !body.image_urls.every((x) => typeof x === 'string' && x.length <= 500)) {
+      throw bad('image_urls 必须为不超过 9 个的字符串数组');
+    }
+    imageUrls = body.image_urls;
+  }
+  const city = typeof body.city === 'string' ? body.city.trim().slice(0, 20) : '';
+  const ret = db.prepare('INSERT INTO posts (user_id, text, image_urls_json, recipe_id, city) VALUES (?, ?, ?, ?, ?)')
+    .run(user.id, text, JSON.stringify(imageUrls), recipeId, city);
+  const row = db.prepare(`${POST_SELECT} WHERE p.id = ?`).get(Number(ret.lastInsertRowid));
+  sendJSON(res, 200, { ok: true, post: postOut(row) });
+});
+
+route('GET', '/api/posts', false, ({ res, query }) => {
+  const tab = query.get('tab') || 'latest';
+  if (tab !== 'latest' && tab !== 'recommend') throw bad("tab 只能为 'recommend' 或 'latest'");
+  const orderSQL = tab === 'recommend' ? 'ORDER BY comment_count DESC, p.id DESC' : 'ORDER BY p.id DESC';
+  const rows = db.prepare(`${POST_SELECT} ${orderSQL} LIMIT 50`).all();
+  sendJSON(res, 200, { tab, items: rows.map(postOut) });
+});
+
+route('POST', '/api/posts/(\\d+)/comments', true, ({ res, m, user, body }) => {
+  const postId = Number(m[1]);
+  if (!db.prepare('SELECT id FROM posts WHERE id = ?').get(postId)) throw new HttpError(404, 'post_not_found');
+  const text = typeof body.text === 'string' ? body.text.trim() : '';
+  if (!text || text.length > 500) throw bad('text 必填且不超过 500 字');
+  const ret = db.prepare('INSERT INTO comments (post_id, user_id, text) VALUES (?, ?, ?)').run(postId, user.id, text);
+  const row = db.prepare('SELECT * FROM comments WHERE id = ?').get(Number(ret.lastInsertRowid));
+  sendJSON(res, 200, { ok: true, comment: row });
+});
+
+route('GET', '/api/posts/(\\d+)/comments', false, ({ res, m }) => {
+  const postId = Number(m[1]);
+  const rows = db.prepare(`SELECT c.*, u.nickname FROM comments c LEFT JOIN users u ON u.id = c.user_id
+    WHERE c.post_id = ? ORDER BY c.id ASC LIMIT 200`).all(postId);
+  sendJSON(res, 200, { items: rows });
+});
+
+/* --- AI：文本菜谱结构化（真实调用 LLM，推理模型：答案在 content） --- */
+route('POST', '/api/ai/quantify-recipe', true, async ({ res, body }) => {
+  const text = typeof body.text === 'string' ? body.text.trim() : '';
+  if (!text || text.length > 4000) throw bad('text 必填且不超过 4000 字');
+  const sys = '你是食谱结构化助手。将用户提供的菜谱文本解析为 JSON，只输出 JSON 本身，'
+    + '禁止输出任何解释、前后缀或 markdown 代码块。JSON 格式：'
+    + '{"菜名":字符串,"简介":一句话,"分类":"家常小炒/汤羹/主食/海鲜/凉菜/烘焙"之一,'
+    + '"食材":[{"name":字符串,"amount":字符串}],"步骤":[字符串数组],"时长分钟":数字,'
+    + '"营养":{"kcal":数字,"protein":数字,"fat":数字,"carb":数字},"健康评分":1到10的整数}';
+  const msg = await llmChat([
+    { role: 'system', content: sys },
+    { role: 'user', content: text },
+  ], 2048);
+  const parsed = extractJSON(msg.content);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new HttpError(502, 'llm_parse_failed', '模型原始输出：' + msg.content);
+  }
+  sendJSON(res, 200, { ok: true, recipe: parsed });
+});
+
+/* --- AI：拍冰箱识别食材（支持多图合并识别，最多 4 张） --- */
+route('POST', '/api/ai/recognize-ingredients', true, async ({ res, body }) => {
+  const images = [];
+  const pushB64 = (raw) => {
+    let b64 = typeof raw === 'string' ? raw.trim() : '';
+    if (!b64) return;
+    const dm = /^data:image\/[a-zA-Z+.-]+;base64,/.exec(b64);
+    if (dm) b64 = b64.slice(dm[0].length);
+    if (b64.length < 100 || b64.length > 10 * 1024 * 1024 || !/^[A-Za-z0-9+/=\s]+$/.test(b64)) return;
+    images.push(b64);
+  };
+  if (Array.isArray(body.images)) body.images.forEach(pushB64);
+  pushB64(body.image_base64); // 兼容旧单图字段
+  if (!images.length) throw bad('images 必填（1~4 张 base64 图片）');
+  if (images.length > 4) images.length = 4;
+
+  const content = [
+    { type: 'text', text: '这些是用户冰箱/厨房的照片（可能有多张，拍的是同一批食材）。识别所有照片中出现的可食用食材，去重后合并为一个清单；包装食品给出通用食材名（如"牛奶""豆腐"），不要输出品牌、厨具、餐具。只输出 JSON 字符串数组，例如 ["番茄","鸡蛋","牛奶"]，不要输出任何其他内容。' },
+    ...images.map((b64) => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } })),
+  ];
+  const msg = await llmChat([{ role: 'user', content }], 4096, 150000);
+  let parsed = extractJSON(msg.content);
+  if (!Array.isArray(parsed) && msg.reasoning_content) {
+    // 推理模型可能在思维链里输出 JSON，兜底提取
+    parsed = extractJSON(String(msg.reasoning_content));
+  }
+  if (!Array.isArray(parsed)) throw new HttpError(502, 'llm_parse_failed', '模型原始输出：' + (msg.content || '(空)') + (msg.reasoning_content ? ' | 思维链尾部：' + String(msg.reasoning_content).slice(-300) : ''));
+  const uniq = [...new Set(parsed.map((x) => String(x).trim()).filter(Boolean))];
+  sendJSON(res, 200, { ok: true, ingredients: uniq, image_count: images.length });
+});
+
+/* ---------------- HTTP 服务与分发 ---------------- */
+
+const server = http.createServer(async (req, res) => {
+  try {
+    const u = new URL(req.url, 'http://localhost');
+    let pathName;
+    try { pathName = decodeURIComponent(u.pathname); } catch { throw bad('bad_url'); }
+    let pathMatched = false;
+    for (const r of routes) {
+      const m = pathName.match(r.regex);
+      if (!m) continue;
+      pathMatched = true;
+      if (r.method !== req.method) continue;
+      const user = r.auth ? requireAuth(req) : null;
+      const body = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method) ? await readJSON(req) : {};
+      await r.handler({ req, res, m, body, user, query: u.searchParams });
+      return;
+    }
+    if (pathMatched) throw new HttpError(405, 'method_not_allowed');
+    throw new HttpError(404, 'not_found');
+  } catch (e) {
+    if (res.headersSent) { try { res.end(); } catch { } return; }
+    if (e instanceof HttpError) {
+      sendJSON(res, e.status, { error: e.code, detail: e.detail });
+    } else {
+      console.error('[error]', req.method, req.url, (e && e.stack) || e);
+      sendJSON(res, 500, { error: 'internal_error' });
+    }
+  }
+});
+
+server.listen(PORT, HOST, () => {
+  console.log(`[server] shiguang-backend listening on ${HOST}:${PORT}`);
+});
+server.on('error', (e) => { console.error('[server] fatal:', e); process.exit(1); });
+process.on('uncaughtException', (e) => { console.error('[uncaught]', e); process.exit(1); });
+process.on('unhandledRejection', (e) => { console.error('[unhandled]', e); process.exit(1); });
+process.on('SIGTERM', () => { console.log('[server] SIGTERM received, exiting'); process.exit(0); });

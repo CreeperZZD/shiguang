@@ -1,0 +1,21 @@
+# 忽略构建产物与本地环境
+ShiGuang/.gradle/
+ShiGuang/build/
+ShiGuang/app/build/
+ShiGuang/local.properties
+ShiGuang/.idea/
+ShiGuang/.kotlin/
+ShiGuang/build_log.txt
+*.apk
+!release/*.apk
+
+# 后端运行时数据（数据库/密钥/临时文件不入库）
+backend/data/
+backend/secrets/
+covers-manifest.json.bak
+node_modules/
+*.log
+
+# 系统文件
+Thumbs.db
+.DS_Store

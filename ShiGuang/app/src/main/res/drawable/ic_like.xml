@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 食光自绘点赞图标：手腕 + 竖掌 + 弯拇指 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M2.5,10.2 h3.2 a0.8,0.8 0 0 1 0.8,0.8 v8.6 a0.8,0.8 0 0 1 -0.8,0.8 h-3.2 a0.8,0.8 0 0 1 -0.8,-0.8 v-8.6 a0.8,0.8 0 0 1 0.8,-0.8 Z M8.6,20.4 V10.1 C10.6,10 11.7,8.6 12.2,6.7 C12.5,5.5 12.6,3.4 14,3.4 C15.6,3.4 15.7,5.9 15.1,8.2 C15,8.8 14.8,9.4 14.6,9.9 L18.3,9.9 C19.6,9.9 20.5,11.1 20.2,12.3 L18.9,18.2 C18.6,19.7 17.3,20.7 15.8,20.7 L9.4,20.7 A0.8,0.8 0 0 1 8.6,20.4 Z" />
+</vector>

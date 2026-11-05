@@ -1,0 +1,1158 @@
+[
+  {
+    "id": 1,
+    "name": "番茄炒蛋",
+    "thumburl": "https://upload.wikimedia.org/wikipedia/commons/1/19/Stir_Fried_Tomatoes_with_Scrambled_Eggs.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/1/19/Stir_Fried_Tomatoes_with_Scrambled_Eggs.jpg",
+    "credit": "NNU-10-24100123 · CC BY-SA 3.0",
+    "file": "File:Stir Fried Tomatoes with Scrambled Eggs.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 2,
+    "name": "青椒肉丝",
+    "thumburl": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Pepper_steak.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Pepper_steak.jpg",
+    "credit": "Bakkai撮影 · CC BY-SA 3.0",
+    "file": "File:Pepper steak.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 3,
+    "name": "红烧肉",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4e/Red_braised_pork_%2820141106191221%29.JPG/960px-Red_braised_pork_%2820141106191221%29.JPG",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Red_braised_pork_%2820141106191221%29.JPG",
+    "credit": "N509FZ · CC BY-SA 4.0",
+    "file": "File:Red braised pork (20141106191221).JPG",
+    "source": "wikimedia"
+  },
+  {
+    "id": 4,
+    "name": "麻婆豆腐",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Billyfoodmabodofu3.jpg/960px-Billyfoodmabodofu3.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Billyfoodmabodofu3.jpg",
+    "credit": "Archon6812 · CC BY-SA 3.0",
+    "file": "File:Billyfoodmabodofu3.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 5,
+    "name": "清蒸鲈鱼",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/%E6%B8%85%E8%92%B8%E9%B2%88%E9%B1%BC.jpg/960px-%E6%B8%85%E8%92%B8%E9%B2%88%E9%B1%BC.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/c/c6/%E6%B8%85%E8%92%B8%E9%B2%88%E9%B1%BC.jpg",
+    "credit": "Walter Grassroot · CC BY-SA 3.0",
+    "file": "File:清蒸鲈鱼.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 6,
+    "name": "蒜蓉西兰花",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 7,
+    "name": "西红柿鸡蛋汤",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 8,
+    "name": "可乐鸡翅",
+    "thumburl": "https://upload.wikimedia.org/wikipedia/commons/4/43/%E5%8F%AF%E4%B9%90%E9%B8%A1%E7%BF%85.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/4/43/%E5%8F%AF%E4%B9%90%E9%B8%A1%E7%BF%85.jpg",
+    "credit": "Wuzhiya · CC BY-SA 4.0",
+    "file": "File:可乐鸡翅.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 9,
+    "name": "鱼香肉丝",
+    "thumburl": "https://upload.wikimedia.org/wikipedia/commons/6/61/%E9%B1%BC%E9%A6%99%E8%82%89%E4%B8%9D.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/6/61/%E9%B1%BC%E9%A6%99%E8%82%89%E4%B8%9D.jpg",
+    "credit": "Дмитрий Журавлев (dejur) · CC BY-SA 3.0",
+    "file": "File:鱼香肉丝.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 10,
+    "name": "宫保鸡丁",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8e/Kung_Pao_Chicken_at_Yujiayan_Restaurant_%2820230510123120%29.jpg/960px-Kung_Pao_Chicken_at_Yujiayan_Restaurant_%2820230510123120%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Kung_Pao_Chicken_at_Yujiayan_Restaurant_%2820230510123120%29.jpg",
+    "credit": "N509FZ · CC BY-SA 4.0",
+    "file": "File:Kung Pao Chicken at Yujiayan Restaurant (20230510123120).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 11,
+    "name": "酸辣土豆丝",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 12,
+    "name": "白灼虾",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Canto_white_boiled_shrimp.jpg/960px-Canto_white_boiled_shrimp.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/b/be/Canto_white_boiled_shrimp.jpg",
+    "credit": "Alpha · CC BY-SA 2.0",
+    "file": "File:Canto white boiled shrimp.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 13,
+    "name": "香菇滑鸡",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/%E9%A6%99%E8%8F%87_%E8%85%8A%E8%82%A0_%E6%BB%91%E9%B8%A1_%E7%85%B2%E4%BB%94%E9%A5%AD_Chicken%2C_Shiitake_Mushroom_and_Chinese_Sausage_Hotpot_Rice_-_Soup%2C_Box_Hill_%282171035663%29.jpg/960px-%E9%A6%99%E8%8F%87_%E8%85%8A%E8%82%A0_%E6%BB%91%E9%B8%A1_%E7%85%B2%E4%BB%94%E9%A5%AD_Chicken%2C_Shiitake_Mushroom_and_Chinese_Sausage_Hotpot_Rice_-_Soup%2C_Box_Hill_%282171035663%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/%E9%A6%99%E8%8F%87_%E8%85%8A%E8%82%A0_%E6%BB%91%E9%B8%A1_%E7%85%B2%E4%BB%94%E9%A5%AD_Chicken%2C_Shiitake_Mushroom_and_Chinese_Sausage_Hotpot_Rice_-_Soup%2C_Box_Hill_%282171035663%29.jpg",
+    "credit": "Alpha from Melbourne, Australia · CC BY-SA 2.0",
+    "file": "File:香菇 腊肠 滑鸡 煲仔饭 Chicken, Shiitake Mushroom and Chinese Sausage Hotpot Rice - Soup, Box Hill (2171035663).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 14,
+    "name": "地三鲜",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/55/Disanxian.jpg/960px-Disanxian.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/5/55/Disanxian.jpg",
+    "credit": "Riverhugger · CC BY-SA 4.0",
+    "file": "File:Disanxian.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 15,
+    "name": "蛋炒饭",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Chinese_egg_fried_rice.jpg/960px-Chinese_egg_fried_rice.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/6/65/Chinese_egg_fried_rice.jpg",
+    "credit": "Euniceyeoh07 · CC BY-SA 4.0",
+    "file": "File:Chinese egg fried rice.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 16,
+    "name": "紫菜蛋花汤",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 17,
+    "name": "可乐排骨",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 18,
+    "name": "清炒时蔬",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 19,
+    "name": "冬瓜排骨汤",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 20,
+    "name": "辣椒炒肉",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/%E8%BE%A3%E6%A4%92%E7%82%92%E5%B9%B2%E8%82%89.jpg/960px-%E8%BE%A3%E6%A4%92%E7%82%92%E5%B9%B2%E8%82%89.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/a/ad/%E8%BE%A3%E6%A4%92%E7%82%92%E5%B9%B2%E8%82%89.jpg",
+    "credit": "Suginami · CC0",
+    "file": "File:辣椒炒干肉.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 21,
+    "name": "蚂蚁上树",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%9A%82%E8%9A%81%E4%B8%8A%E6%A0%91&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 22,
+    "name": "干煸四季豆",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%B9%B2%E7%85%B8%E5%9B%9B%E5%AD%A3%E8%B1%86&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 23,
+    "name": "虎皮青椒",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%99%8E%E7%9A%AE%E9%9D%92%E6%A4%92&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 24,
+    "name": "醋溜白菜",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E9%86%8B%E6%BA%9C%E7%99%BD%E8%8F%9C&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 25,
+    "name": "手撕包菜",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E6%89%8B%E6%92%95%E5%8C%85%E8%8F%9C&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 26,
+    "name": "蚝油生菜",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%9A%9D%E6%B2%B9%E7%94%9F%E8%8F%9C&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 27,
+    "name": "蒜蓉空心菜",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%92%9C%E8%93%89%E7%A9%BA%E5%BF%83%E8%8F%9C&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 28,
+    "name": "葱爆羊肉",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%91%B1%E7%88%86%E7%BE%8A%E8%82%89&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 29,
+    "name": "孜然牛肉",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/af/Cumin_beef_fried_rice_%281%29.jpg/960px-Cumin_beef_fried_rice_%281%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/a/af/Cumin_beef_fried_rice_%281%29.jpg",
+    "credit": "Fumikas Sagisavas · CC0",
+    "file": "File:Cumin beef fried rice (1).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 30,
+    "name": "杭椒牛柳",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/%E6%9D%AD%E6%A4%92%E7%89%9B%E6%9F%B3.jpg/960px-%E6%9D%AD%E6%A4%92%E7%89%9B%E6%9F%B3.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/d/d6/%E6%9D%AD%E6%A4%92%E7%89%9B%E6%9F%B3.jpg",
+    "credit": "Galaxyharrylion · CC BY-SA 3.0",
+    "file": "File:杭椒牛柳.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 31,
+    "name": "糖醋里脊",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Tangcu_liji.jpg/960px-Tangcu_liji.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Tangcu_liji.jpg",
+    "credit": "J B · CC BY 2.0",
+    "file": "File:Tangcu liji.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 32,
+    "name": "红烧茄子",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e7/%E7%BA%A2%E7%83%A7%E8%8C%84%E5%AD%90-%E4%BA%91%E5%8D%97%E6%98%86%E6%98%8E.jpg/960px-%E7%BA%A2%E7%83%A7%E8%8C%84%E5%AD%90-%E4%BA%91%E5%8D%97%E6%98%86%E6%98%8E.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/e/e7/%E7%BA%A2%E7%83%A7%E8%8C%84%E5%AD%90-%E4%BA%91%E5%8D%97%E6%98%86%E6%98%8E.jpg",
+    "credit": "tak.wing · CC BY-SA 2.0",
+    "file": "File:红烧茄子-云南昆明.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 33,
+    "name": "肉末豆腐",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 34,
+    "name": "家常豆腐",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/Ji%C4%81ch%C3%A1ng_d%C3%B2uf%C7%94%2C_marinated_cucumbers%2C_miso_soup_with_wakame_seaweed_and_scallions%2C_and_rice_%E5%AE%B6%E5%B8%B8%E8%B1%86%E8%85%90%E3%80%81%E3%82%AD%E3%83%A5%E3%82%A6%E3%83%AA%E3%81%AE%E5%8D%B3%E5%B8%AD%E6%98%86%E5%B8%83%E6%BC%AC%E3%81%91%E3%80%81%E3%83%AF%E3%82%AB%E3%83%A1%E3%81%A8%E3%83%8D%E3%82%AE%E3%81%AE%E5%91%B3%E5%99%8C%E6%B1%81%E3%80%81%E7%99%BD%E7%B1%B3.jpg/960px-thumbnail.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/6/68/Ji%C4%81ch%C3%A1ng_d%C3%B2uf%C7%94%2C_marinated_cucumbers%2C_miso_soup_with_wakame_seaweed_and_scallions%2C_and_rice_%E5%AE%B6%E5%B8%B8%E8%B1%86%E8%85%90%E3%80%81%E3%82%AD%E3%83%A5%E3%82%A6%E3%83%AA%E3%81%AE%E5%8D%B3%E5%B8%AD%E6%98%86%E5%B8%83%E6%BC%AC%E3%81%91%E3%80%81%E3%83%AF%E3%82%AB%E3%83%A1%E3%81%A8%E3%83%8D%E3%82%AE%E3%81%AE%E5%91%B3%E5%99%8C%E6%B1%81%E3%80%81%E7%99%BD%E7%B1%B3.jpg",
+    "credit": "naotakem · CC BY 2.0",
+    "file": "File:Jiācháng dòufǔ, marinated cucumbers, miso soup with wakame seaweed and scallions, and rice 家常豆腐、キュウリの即席昆布漬け、ワカメとネギの味噌汁、白米.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 35,
+    "name": "鱼香茄子",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Yuxiangqiezi.jpg/960px-Yuxiangqiezi.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/2/20/Yuxiangqiezi.jpg",
+    "credit": "Ewan-M of Flickr · CC BY-SA 2.0",
+    "file": "File:Yuxiangqiezi.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 36,
+    "name": "土豆炖牛肉",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d3/%E6%B9%98%E8%8F%9C%E9%A6%86%E4%B9%8B%E5%9C%9F%E8%B1%86%E7%82%96%E6%8E%92%E9%AA%A8.jpg/960px-%E6%B9%98%E8%8F%9C%E9%A6%86%E4%B9%8B%E5%9C%9F%E8%B1%86%E7%82%96%E6%8E%92%E9%AA%A8.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/d/d3/%E6%B9%98%E8%8F%9C%E9%A6%86%E4%B9%8B%E5%9C%9F%E8%B1%86%E7%82%96%E6%8E%92%E9%AA%A8.jpg",
+    "credit": "Liuxingy · CC BY-SA 4.0",
+    "file": "File:湘菜馆之土豆炖排骨.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 37,
+    "name": "红烧牛腩",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/%E7%BA%A2%E7%83%A7%E7%89%9B%E8%85%A9%E8%82%89%E9%85%B1%E7%B1%B3%E7%BA%BF%EF%BC%882025%E5%B9%B46%E6%9C%8828%E6%97%A5%EF%BC%89.jpg/960px-%E7%BA%A2%E7%83%A7%E7%89%9B%E8%85%A9%E8%82%89%E9%85%B1%E7%B1%B3%E7%BA%BF%EF%BC%882025%E5%B9%B46%E6%9C%8828%E6%97%A5%EF%BC%89.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/1/14/%E7%BA%A2%E7%83%A7%E7%89%9B%E8%85%A9%E8%82%89%E9%85%B1%E7%B1%B3%E7%BA%BF%EF%BC%882025%E5%B9%B46%E6%9C%8828%E6%97%A5%EF%BC%89.jpg",
+    "credit": "茅野ふたば · CC BY-SA 4.0",
+    "file": "File:红烧牛腩肉酱米线（2025年6月28日）.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 38,
+    "name": "萝卜炖羊肉",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/%E7%BE%8A%E8%82%89%E7%82%96%E8%90%9D%E5%8D%9C_20251203.jpg/960px-%E7%BE%8A%E8%82%89%E7%82%96%E8%90%9D%E5%8D%9C_20251203.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/d/da/%E7%BE%8A%E8%82%89%E7%82%96%E8%90%9D%E5%8D%9C_20251203.jpg",
+    "credit": "Auongkinghe · CC BY-SA 4.0",
+    "file": "File:羊肉炖萝卜 20251203.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 39,
+    "name": "红烧狮子头",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%BA%A2%E7%83%A7%E7%8B%AE%E5%AD%90%E5%A4%B4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 40,
+    "name": "红烧带鱼",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%BA%A2%E7%83%A7%E5%B8%A6%E9%B1%BC&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 41,
+    "name": "红烧鸡翅",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%BA%A2%E7%83%A7%E9%B8%A1%E7%BF%85&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 42,
+    "name": "黄焖鸡",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E9%BB%84%E7%84%96%E9%B8%A1&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 43,
+    "name": "啤酒鸭",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%95%A4%E9%85%92%E9%B8%AD&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 44,
+    "name": "板栗烧鸡",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E6%9D%BF%E6%A0%97%E7%83%A7%E9%B8%A1&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 45,
+    "name": "排骨炖豆角",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/Jiefang_Road%2C_Shenzhen_%28254%29.jpg/960px-Jiefang_Road%2C_Shenzhen_%28254%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/e/ed/Jiefang_Road%2C_Shenzhen_%28254%29.jpg",
+    "credit": "Dinkun Chen · CC BY-SA 4.0",
+    "file": "File:Jiefang Road, Shenzhen (254).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 46,
+    "name": "白菜炖豆腐",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 47,
+    "name": "咖喱鸡肉",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 48,
+    "name": "土豆烧排骨",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 49,
+    "name": "糖醋排骨",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7b/%E7%B3%96%E9%86%8B%E6%8E%92%E9%AA%A8.JPG/960px-%E7%B3%96%E9%86%8B%E6%8E%92%E9%AA%A8.JPG",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/7/7b/%E7%B3%96%E9%86%8B%E6%8E%92%E9%AA%A8.JPG",
+    "credit": "施雅敏 · CC BY-SA 3.0",
+    "file": "File:糖醋排骨.JPG",
+    "source": "wikimedia"
+  },
+  {
+    "id": 50,
+    "name": "糖醋鱼块",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 51,
+    "name": "水煮肉片",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Shuizhu_Roupian_on_T8_%2820260430102820%29.jpg/960px-Shuizhu_Roupian_on_T8_%2820260430102820%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/2/24/Shuizhu_Roupian_on_T8_%2820260430102820%29.jpg",
+    "credit": "N509FZ · CC BY-SA 4.0",
+    "file": "File:Shuizhu Roupian on T8 (20260430102820).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 52,
+    "name": "酸菜鱼",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/%E9%85%B8%E8%8F%9C%E9%B1%BC_Preserved_Mustard_Green_with_Fish_-_Charming_Spice_AUD24.80_%284104355401%29.jpg/960px-%E9%85%B8%E8%8F%9C%E9%B1%BC_Preserved_Mustard_Green_with_Fish_-_Charming_Spice_AUD24.80_%284104355401%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/5/54/%E9%85%B8%E8%8F%9C%E9%B1%BC_Preserved_Mustard_Green_with_Fish_-_Charming_Spice_AUD24.80_%284104355401%29.jpg",
+    "credit": "Alpha from Melbourne, Australia · CC BY-SA 2.0",
+    "file": "File:酸菜鱼 Preserved Mustard Green with Fish - Charming Spice AUD24.80 (4104355401).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 53,
+    "name": "香菇焖鸡",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E9%A6%99%E8%8F%87%E7%84%96%E9%B8%A1&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 54,
+    "name": "红烧猪蹄",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%BA%A2%E7%83%A7%E7%8C%AA%E8%B9%84&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 55,
+    "name": "冬瓜烧鸭",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%86%AC%E7%93%9C%E7%83%A7%E9%B8%AD&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 56,
+    "name": "肉饼蒸蛋",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%82%89%E9%A5%BC%E8%92%B8%E8%9B%8B&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 57,
+    "name": "粉蒸肉",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%B2%89%E8%92%B8%E8%82%89&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 58,
+    "name": "剁椒鱼头",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%89%81%E6%A4%92%E9%B1%BC%E5%A4%B4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 59,
+    "name": "蒜蓉粉丝蒸扇贝",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%92%9C%E8%93%89%E7%B2%89%E4%B8%9D%E8%92%B8%E6%89%87%E8%B4%9D&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 60,
+    "name": "豆豉蒸排骨",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%B1%86%E8%B1%89%E8%92%B8%E6%8E%92%E9%AA%A8&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 61,
+    "name": "香菇蒸滑鸡",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E9%A6%99%E8%8F%87%E8%92%B8%E6%BB%91%E9%B8%A1&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 62,
+    "name": "清蒸鳕鱼",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 63,
+    "name": "玉米排骨汤",
+    "thumburl": "https://upload.wikimedia.org/wikipedia/commons/d/d0/CHANGSHAXIAOCHI.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/d/d0/CHANGSHAXIAOCHI.jpg",
+    "credit": "Yinsanhen · CC BY-SA 4.0",
+    "file": "File:CHANGSHAXIAOCHI.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 64,
+    "name": "莲藕排骨汤",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 65,
+    "name": "山药鸡汤",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 66,
+    "name": "酸辣汤",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Hot-and-Sour-Soup-Bowl.jpg/960px-Hot-and-Sour-Soup-Bowl.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/0/09/Hot-and-Sour-Soup-Bowl.jpg",
+    "credit": "Evan-Amos · Public domain",
+    "file": "File:Hot-and-Sour-Soup-Bowl.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 67,
+    "name": "海带豆腐汤",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 68,
+    "name": "番茄牛腩汤",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%95%AA%E8%8C%84%E7%89%9B%E8%85%A9%E6%B1%A4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 69,
+    "name": "鲫鱼豆腐汤",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E9%B2%AB%E9%B1%BC%E8%B1%86%E8%85%90%E6%B1%A4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 70,
+    "name": "冬瓜丸子汤",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%86%AC%E7%93%9C%E4%B8%B8%E5%AD%90%E6%B1%A4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 71,
+    "name": "丝瓜蛋汤",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E4%B8%9D%E7%93%9C%E8%9B%8B%E6%B1%A4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 72,
+    "name": "南瓜浓汤",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%8D%97%E7%93%9C%E6%B5%93%E6%B1%A4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 73,
+    "name": "蘑菇鸡汤",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%98%91%E8%8F%87%E9%B8%A1%E6%B1%A4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 74,
+    "name": "罗宋汤",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%BD%97%E5%AE%8B%E6%B1%A4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 75,
+    "name": "老鸭汤",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%80%81%E9%B8%AD%E6%B1%A4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 76,
+    "name": "葱油拌面",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%91%B1%E6%B2%B9%E6%8B%8C%E9%9D%A2&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 77,
+    "name": "炸酱面",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%82%B8%E9%85%B1%E9%9D%A2&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 78,
+    "name": "西红柿鸡蛋面",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%A5%BF%E7%BA%A2%E6%9F%BF%E9%B8%A1%E8%9B%8B%E9%9D%A2&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 79,
+    "name": "红烧牛肉面",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/%E7%BA%A2%E7%83%A7%E7%89%9B%E8%82%89%E9%9D%A2%EF%BC%882025%E5%B9%B46%E6%9C%8818%E6%97%A5%EF%BC%89.jpg/960px-%E7%BA%A2%E7%83%A7%E7%89%9B%E8%82%89%E9%9D%A2%EF%BC%882025%E5%B9%B46%E6%9C%8818%E6%97%A5%EF%BC%89.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/e/ed/%E7%BA%A2%E7%83%A7%E7%89%9B%E8%82%89%E9%9D%A2%EF%BC%882025%E5%B9%B46%E6%9C%8818%E6%97%A5%EF%BC%89.jpg",
+    "credit": "茅野ふたば · CC BY-SA 4.0",
+    "file": "File:红烧牛肉面（2025年6月18日）.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 80,
+    "name": "重庆小面",
+    "thumburl": "https://upload.wikimedia.org/wikipedia/commons/f/f8/%E8%B1%8C%E6%9D%82%E9%9D%A2.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/f/f8/%E8%B1%8C%E6%9D%82%E9%9D%A2.jpg",
+    "credit": "木下^ 俱欢颜* · CC BY-SA 3.0",
+    "file": "File:豌杂面.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 81,
+    "name": "鲜虾馄饨",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 82,
+    "name": "白菜猪肉饺子",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/%E9%85%B8%E8%8F%9C%E7%8C%AA%E8%82%89%E9%A5%BA%E5%AD%90_Preserved_Vegetable_and_Pork_Dumplings_-_Original_Taste.jpg/960px-%E9%85%B8%E8%8F%9C%E7%8C%AA%E8%82%89%E9%A5%BA%E5%AD%90_Preserved_Vegetable_and_Pork_Dumplings_-_Original_Taste.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/a/a0/%E9%85%B8%E8%8F%9C%E7%8C%AA%E8%82%89%E9%A5%BA%E5%AD%90_Preserved_Vegetable_and_Pork_Dumplings_-_Original_Taste.jpg",
+    "credit": "avlxyz · CC BY-SA 2.0",
+    "file": "File:酸菜猪肉饺子 Preserved Vegetable and Pork Dumplings - Original Taste.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 83,
+    "name": "韭菜盒子",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Jiucai_Hezi_at_Dongsi_Minfang_Restaurant%2C_Chongwenmen_%2820220215114852%29.jpg/960px-Jiucai_Hezi_at_Dongsi_Minfang_Restaurant%2C_Chongwenmen_%2820220215114852%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/7/74/Jiucai_Hezi_at_Dongsi_Minfang_Restaurant%2C_Chongwenmen_%2820220215114852%29.jpg",
+    "credit": "N509FZ · CC BY-SA 4.0",
+    "file": "File:Jiucai Hezi at Dongsi Minfang Restaurant, Chongwenmen (20220215114852).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 84,
+    "name": "葱花鸡蛋饼",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%91%B1%E8%8A%B1%E9%B8%A1%E8%9B%8B%E9%A5%BC&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 85,
+    "name": "手抓饼",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E6%89%8B%E6%8A%93%E9%A5%BC&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 86,
+    "name": "疙瘩汤",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%96%99%E7%98%A9%E6%B1%A4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 87,
+    "name": "扬州炒饭",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E6%89%AC%E5%B7%9E%E7%82%92%E9%A5%AD&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 88,
+    "name": "皮蛋瘦肉粥",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%9A%AE%E8%9B%8B%E7%98%A6%E8%82%89%E7%B2%A5&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 89,
+    "name": "腊肠煲仔饭",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%85%8A%E8%82%A0%E7%85%B2%E4%BB%94%E9%A5%AD&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 90,
+    "name": "南瓜粥",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%8D%97%E7%93%9C%E7%B2%A5&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 91,
+    "name": "牛肉炒河粉",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%89%9B%E8%82%89%E7%82%92%E6%B2%B3%E7%B2%89&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 92,
+    "name": "荠菜馄饨",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%8D%A0%E8%8F%9C%E9%A6%84%E9%A5%A8&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 93,
+    "name": "拍黄瓜",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E6%8B%8D%E9%BB%84%E7%93%9C&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 94,
+    "name": "凉拌木耳",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%87%89%E6%8B%8C%E6%9C%A8%E8%80%B3&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 95,
+    "name": "大拌菜",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 96,
+    "name": "口水鸡",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/21/%E5%B0%8F%E5%9B%9B%E5%B7%9D%E8%8C%B6%E6%B0%B4%E3%80%81%E5%8F%A3%E6%B0%B4%E9%B8%A1%E5%92%8C%E7%99%BD%E7%B1%B3%E9%A5%AD%EF%BC%882025%E5%B9%B410%E6%9C%884%E6%97%A5%EF%BC%89.jpg/960px-%E5%B0%8F%E5%9B%9B%E5%B7%9D%E8%8C%B6%E6%B0%B4%E3%80%81%E5%8F%A3%E6%B0%B4%E9%B8%A1%E5%92%8C%E7%99%BD%E7%B1%B3%E9%A5%AD%EF%BC%882025%E5%B9%B410%E6%9C%884%E6%97%A5%EF%BC%89.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/2/21/%E5%B0%8F%E5%9B%9B%E5%B7%9D%E8%8C%B6%E6%B0%B4%E3%80%81%E5%8F%A3%E6%B0%B4%E9%B8%A1%E5%92%8C%E7%99%BD%E7%B1%B3%E9%A5%AD%EF%BC%882025%E5%B9%B410%E6%9C%884%E6%97%A5%EF%BC%89.jpg",
+    "credit": "茅野ふたば · CC BY-SA 4.0",
+    "file": "File:小四川茶水、口水鸡和白米饭（2025年10月4日）.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 97,
+    "name": "凉拌海带丝",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 98,
+    "name": "蒜泥白肉",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/19/%E6%8B%9B%E7%89%8C%E8%92%9C%E6%B3%A5%E7%99%BD%E8%82%89.jpg/960px-%E6%8B%9B%E7%89%8C%E8%92%9C%E6%B3%A5%E7%99%BD%E8%82%89.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/1/19/%E6%8B%9B%E7%89%8C%E8%92%9C%E6%B3%A5%E7%99%BD%E8%82%89.jpg",
+    "credit": "Yunseul1118 · CC BY-SA 4.0",
+    "file": "File:招牌蒜泥白肉.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 99,
+    "name": "皮蛋豆腐",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/Pidan_Doufu_at_Changranju%2C_Beijing_%2820210627193105%29.jpg/960px-Pidan_Doufu_at_Changranju%2C_Beijing_%2820210627193105%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/4/42/Pidan_Doufu_at_Changranju%2C_Beijing_%2820210627193105%29.jpg",
+    "credit": "N509FZ · CC BY-SA 4.0",
+    "file": "File:Pidan Doufu at Changranju, Beijing (20210627193105).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 100,
+    "name": "凉拌毛豆",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 101,
+    "name": "鸡蛋灌饼",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f6/%E9%B8%A1%E8%9B%8B%E7%81%8C%E9%A5%BC_Jidan_Guanbing.png/960px-%E9%B8%A1%E8%9B%8B%E7%81%8C%E9%A5%BC_Jidan_Guanbing.png",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/%E9%B8%A1%E8%9B%8B%E7%81%8C%E9%A5%BC_Jidan_Guanbing.png",
+    "credit": "Suginami · CC0",
+    "file": "File:鸡蛋灌饼 Jidan Guanbing.png",
+    "source": "wikimedia"
+  },
+  {
+    "id": 102,
+    "name": "香煎馒头片",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E9%A6%99%E7%85%8E%E9%A6%92%E5%A4%B4%E7%89%87&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 103,
+    "name": "牛奶燕麦粥",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%89%9B%E5%A5%B6%E7%87%95%E9%BA%A6%E7%B2%A5&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 104,
+    "name": "小米红枣粥",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%B0%8F%E7%B1%B3%E7%BA%A2%E6%9E%A3%E7%B2%A5&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 105,
+    "name": "蔬菜鸡蛋饼",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%94%AC%E8%8F%9C%E9%B8%A1%E8%9B%8B%E9%A5%BC&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 106,
+    "name": "香蕉松饼",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E9%A6%99%E8%95%89%E6%9D%BE%E9%A5%BC&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 107,
+    "name": "吐司披萨",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%90%90%E5%8F%B8%E6%8A%AB%E8%90%A8&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 108,
+    "name": "辣炒花蛤",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%BE%A3%E7%82%92%E8%8A%B1%E8%9B%A4&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 109,
+    "name": "葱油蛏子",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%91%B1%E6%B2%B9%E8%9B%8F%E5%AD%90&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 110,
+    "name": "红烧黄鱼",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%BA%A2%E7%83%A7%E9%BB%84%E9%B1%BC&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 111,
+    "name": "酱爆鱿鱼",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 112,
+    "name": "姜葱炒蟹",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/%E5%A7%9C%E8%91%B1%E7%82%92%E8%8A%B1%E8%9F%B9.jpg/960px-%E5%A7%9C%E8%91%B1%E7%82%92%E8%8A%B1%E8%9F%B9.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/c/ce/%E5%A7%9C%E8%91%B1%E7%82%92%E8%8A%B1%E8%9F%B9.jpg",
+    "credit": "NanoKid · CC BY-SA 4.0",
+    "file": "File:姜葱炒花蟹.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 113,
+    "name": "椒盐大虾",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/%E6%A4%92%E7%9B%90%E5%A4%A7%E8%99%BE_20251203.jpg/960px-%E6%A4%92%E7%9B%90%E5%A4%A7%E8%99%BE_20251203.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/4/45/%E6%A4%92%E7%9B%90%E5%A4%A7%E8%99%BE_20251203.jpg",
+    "credit": "Auongkinghe · CC BY-SA 4.0",
+    "file": "File:椒盐大虾 20251203.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 114,
+    "name": "蒜蓉蒸生蚝",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2a/Freshippo_steamed_oysters_with_vermicelli_and_garlic.jpg/960px-Freshippo_steamed_oysters_with_vermicelli_and_garlic.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/2/2a/Freshippo_steamed_oysters_with_vermicelli_and_garlic.jpg",
+    "credit": "Fumikas Sagisavas · CC0",
+    "file": "File:Freshippo steamed oysters with vermicelli and garlic.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 115,
+    "name": "清炒虾仁",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/%E5%A4%A9%E6%B4%A5%E8%8F%9C_%E6%B8%85%E7%82%92%E8%99%BE%E4%BB%81.jpg/960px-%E5%A4%A9%E6%B4%A5%E8%8F%9C_%E6%B8%85%E7%82%92%E8%99%BE%E4%BB%81.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/7/7c/%E5%A4%A9%E6%B4%A5%E8%8F%9C_%E6%B8%85%E7%82%92%E8%99%BE%E4%BB%81.jpg",
+    "credit": "Amazingloong · CC BY-SA 4.0",
+    "file": "File:天津菜 清炒虾仁.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 116,
+    "name": "木须肉",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/Mu_xu_rou.jpg/960px-Mu_xu_rou.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/3/30/Mu_xu_rou.jpg",
+    "credit": "Ynotswim at English Wikipedia · Public domain",
+    "file": "File:Mu xu rou.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 117,
+    "name": "京酱肉丝",
+    "thumburl": "https://upload.wikimedia.org/wikipedia/commons/7/71/%E4%BA%AC%E9%85%B1%E8%82%89%E4%B8%9D.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/7/71/%E4%BA%AC%E9%85%B1%E8%82%89%E4%B8%9D.jpg",
+    "credit": "Дмитрий Журавлев (dejur) · CC BY-SA 3.0",
+    "file": "File:京酱肉丝.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 118,
+    "name": "蒜苔炒肉",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%92%9C%E8%8B%94%E7%82%92%E8%82%89&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 119,
+    "name": "芹菜炒香干",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%8A%B9%E8%8F%9C%E7%82%92%E9%A6%99%E5%B9%B2&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 120,
+    "name": "洋葱炒鸡蛋",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E6%B4%8B%E8%91%B1%E7%82%92%E9%B8%A1%E8%9B%8B&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 121,
+    "name": "韭菜炒鸡蛋",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E9%9F%AD%E8%8F%9C%E7%82%92%E9%B8%A1%E8%9B%8B&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 122,
+    "name": "苦瓜炒蛋",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%8B%A6%E7%93%9C%E7%82%92%E8%9B%8B&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 123,
+    "name": "荷兰豆炒腊肠",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%8D%B7%E5%85%B0%E8%B1%86%E7%82%92%E8%85%8A%E8%82%A0&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 124,
+    "name": "回锅肉",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%9B%9E%E9%94%85%E8%82%89&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 125,
+    "name": "农家小炒肉",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/Lajiao_Chaorou_at_Xiangzhongyuan_Hunan_Cuisine%2C_Beijing_%2820240131171407%29.jpg/960px-Lajiao_Chaorou_at_Xiangzhongyuan_Hunan_Cuisine%2C_Beijing_%2820240131171407%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/8/80/Lajiao_Chaorou_at_Xiangzhongyuan_Hunan_Cuisine%2C_Beijing_%2820240131171407%29.jpg",
+    "credit": "N509FZ · CC BY-SA 4.0",
+    "file": "File:Lajiao Chaorou at Xiangzhongyuan Hunan Cuisine, Beijing (20240131171407).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 127,
+    "name": "小米南瓜粥",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 128,
+    "name": "八宝粥",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Laba_Congee_at_Hongzhuangyuan%2C_Shangdi_%2820220110173848%29.jpg/960px-Laba_Congee_at_Hongzhuangyuan%2C_Shangdi_%2820220110173848%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Laba_Congee_at_Hongzhuangyuan%2C_Shangdi_%2820220110173848%29.jpg",
+    "credit": "N509FZ · CC BY-SA 4.0",
+    "file": "File:Laba Congee at Hongzhuangyuan, Shangdi (20220110173848).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 129,
+    "name": "红豆粥",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/Patjuk_%28red_bean_porridge%29.jpg/960px-Patjuk_%28red_bean_porridge%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Patjuk_%28red_bean_porridge%29.jpg",
+    "credit": "국립국어원 · CC BY-SA 2.0 kr",
+    "file": "File:Patjuk (red bean porridge).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 130,
+    "name": "紫薯粥",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 131,
+    "name": "绿豆粥",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/Bubur_Kacang_Hijau_%28Sorba%29.jpg/960px-Bubur_Kacang_Hijau_%28Sorba%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/3/30/Bubur_Kacang_Hijau_%28Sorba%29.jpg",
+    "credit": "Supardisahabu · CC BY-SA 4.0",
+    "file": "File:Bubur Kacang Hijau (Sorba).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 132,
+    "name": "玉米碴子粥",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 133,
+    "name": "山药小米粥",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%B1%B1%E8%8D%AF%E5%B0%8F%E7%B1%B3%E7%B2%A5&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 134,
+    "name": "厚蛋烧",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%8E%9A%E8%9B%8B%E7%83%A7&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 135,
+    "name": "番茄鸡蛋饼",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%95%AA%E8%8C%84%E9%B8%A1%E8%9B%8B%E9%A5%BC&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 136,
+    "name": "土豆丝鸡蛋饼",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E5%9C%9F%E8%B1%86%E4%B8%9D%E9%B8%A1%E8%9B%8B%E9%A5%BC&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 137,
+    "name": "西葫芦鸡蛋饼",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%A5%BF%E8%91%AB%E8%8A%A6%E9%B8%A1%E8%9B%8B%E9%A5%BC&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 138,
+    "name": "胡萝卜鸡蛋饼",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%83%A1%E8%90%9D%E5%8D%9C%E9%B8%A1%E8%9B%8B%E9%A5%BC&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 139,
+    "name": "葱花软饼",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%91%B1%E8%8A%B1%E8%BD%AF%E9%A5%BC&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 140,
+    "name": "菜肉包子",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%8F%9C%E8%82%89%E5%8C%85%E5%AD%90&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 141,
+    "name": "香菇菜包",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/77/%E5%AE%A2%E5%AE%B6%E8%8F%9C%E5%8C%85.jpg/960px-%E5%AE%A2%E5%AE%B6%E8%8F%9C%E5%8C%85.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/7/77/%E5%AE%A2%E5%AE%B6%E8%8F%9C%E5%8C%85.jpg",
+    "credit": "Taiwan Hakka Affairs Council · OGDL-Taiwan-1.0",
+    "file": "File:客家菜包.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 142,
+    "name": "烧麦",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Homemade_style_pork_shumai_in_Hong_Kong.jpg/960px-Homemade_style_pork_shumai_in_Hong_Kong.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/f/f1/Homemade_style_pork_shumai_in_Hong_Kong.jpg",
+    "credit": "Peachyeung316 · CC BY-SA 4.0",
+    "file": "File:Homemade style pork shumai in Hong Kong.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 143,
+    "name": "锅贴",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/Beef_and_corn_potstickers.jpg/960px-Beef_and_corn_potstickers.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Beef_and_corn_potstickers.jpg",
+    "credit": "Fumikas Sagisavas · CC0",
+    "file": "File:Beef and corn potstickers.jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 144,
+    "name": "生煎包",
+    "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/%E5%8C%97%E6%8A%95%E7%9F%B3%E7%89%8C%E5%95%86%E5%9F%8E-%E7%94%9F%E7%85%8E%E5%8C%8509_%2827558770616%29.jpg/960px-%E5%8C%97%E6%8A%95%E7%9F%B3%E7%89%8C%E5%95%86%E5%9F%8E-%E7%94%9F%E7%85%8E%E5%8C%8509_%2827558770616%29.jpg",
+    "origurl": "https://upload.wikimedia.org/wikipedia/commons/1/10/%E5%8C%97%E6%8A%95%E7%9F%B3%E7%89%8C%E5%95%86%E5%9F%8E-%E7%94%9F%E7%85%8E%E5%8C%8509_%2827558770616%29.jpg",
+    "credit": "羽諾 諾咪 · CC BY-SA 2.0",
+    "file": "File:北投石牌商城-生煎包09 (27558770616).jpg",
+    "source": "wikimedia"
+  },
+  {
+    "id": 145,
+    "name": "葱油花卷",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 146,
+    "name": "奶香馒头",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 147,
+    "name": "白菜素馅饺子",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%99%BD%E8%8F%9C%E7%B4%A0%E9%A6%85%E9%A5%BA%E5%AD%90&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 148,
+    "name": "火腿三明治",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%81%AB%E8%85%BF%E4%B8%89%E6%98%8E%E6%B2%BB&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 149,
+    "name": "鸡蛋芝士吐司",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E9%B8%A1%E8%9B%8B%E8%8A%9D%E5%A3%AB%E5%90%90%E5%8F%B8&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 150,
+    "name": "花生酱吐司",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%8A%B1%E7%94%9F%E9%85%B1%E5%90%90%E5%8F%B8&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 151,
+    "name": "酸奶水果杯",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E9%85%B8%E5%A5%B6%E6%B0%B4%E6%9E%9C%E6%9D%AF&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 152,
+    "name": "玉米烙",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E7%8E%89%E7%B1%B3%E7%83%99&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 153,
+    "name": "蒸红薯配酸奶",
+    "cover": null,
+    "reason": "search-failed",
+    "error": "Command failed: curl -s --fail -m 25 -x socks5h://127.0.0.1:7897 -A ShiGuangRecipeApp/0.3 (personal recipe app; contact: user) https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=%E8%92%B8%E7%BA%A2%E8%96%AF%E9%85%8D%E9%85%B8%E5%A5%B6&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=640&format=json&origin=*\n"
+  },
+  {
+    "id": 154,
+    "name": "茶香卤蛋",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 155,
+    "name": "黄瓜鸡蛋汤面",
+    "cover": null,
+    "reason": "no-match"
+  },
+  {
+    "id": 156,
+    "name": "西红柿炒鸡蛋（AI）",
+    "cover": null,
+    "reason": "no-match"
+  }
+]
