@@ -49,6 +49,7 @@ import com.shiguang.app.ui.LeaderboardScreen
 import com.shiguang.app.ui.LoginScreen
 import com.shiguang.app.ui.QuantifyScreen
 import com.shiguang.app.ui.SettingsScreen
+import com.shiguang.app.ui.PreferencesScreen
 import com.shiguang.app.ui.SquareScreen
 import com.shiguang.app.ui.WeeklyReportScreen
 import com.shiguang.app.ui.MineScreen
@@ -120,10 +121,11 @@ fun App(onSetTheme: (String) -> Unit = {}) {
         }
     }
 
-    BackHandler(enabled = route.startsWith("detail:") || route == "edit" || route == "weekly" || route.startsWith("videos:") || route == "leaderboard" || route == "square" || route == "quantify" || route == "fridgescan" || route == "family" || route == "report" || route == "settings") {
+    BackHandler(enabled = route.startsWith("detail:") || route == "edit" || route == "weekly" || route.startsWith("videos:") || route == "leaderboard" || route == "square" || route == "quantify" || route == "fridgescan" || route == "family" || route == "report" || route == "settings" || route == "prefs") {
         route = when {
             route.startsWith("detail:") -> detailReturn
             route.startsWith("videos:") -> "detail:" + route.substringAfter("videos:")
+            route == "prefs" -> "settings"
             else -> "main"
         }
     }
@@ -174,7 +176,8 @@ fun App(onSetTheme: (String) -> Unit = {}) {
             onBack = { route = "main" },
         )
         route == "family" -> FamilyScreen(onBack = { route = "main" })
-        route == "settings" -> SettingsScreen(onBack = { route = "main" })
+        route == "settings" -> SettingsScreen(onBack = { route = "main" }, onOpenPrefs = { route = "prefs" })
+        route == "prefs" -> PreferencesScreen(onBack = { route = "settings" })
         route == "report" -> WeeklyReportScreen(
             target = Session.currentMemberTarget ?: parseMe(meJson ?: "")?.targetCalories?.toInt(),
             onBack = { route = "main" },

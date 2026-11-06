@@ -692,7 +692,11 @@ route('GET', '/api/recipes/daily', false, ({ req, res, query }) => {
     }
   }
   const reroll = (query.get('seed') || '').trim(); // 换一换：客户端传随机 seed 即可重摇
-  const recipes = loadAllRecipes();
+  const prefs = prefsFor(getUserByToken(req));
+  let recipes = loadAllRecipes().filter((r) => !hardExcluded(r, prefs));
+  // 病理禁忌软排除：候选充足时优先过滤（池子太小则保留，详情页仍有警示）
+  const safeRecipes = recipes.filter((r) => matchWarnings(r, prefs).length === 0);
+  if (safeRecipes.length >= 30) recipes = safeRecipes;
   if (recipes.length < 3) throw new HttpError(503, 'not_enough_recipes', '菜谱库不足');
   const plan = pickDayPlan(recipes, target, rngFrom(`daily|${date}|${target}${reroll ? '|' + reroll : ''}`), new Map());
   sendJSON(res, 200, {
@@ -720,7 +724,10 @@ route('GET', '/api/recipes/weekly', false, ({ req, res, query }) => {
     }
   }
   const start = localToday();
-  const recipes = loadAllRecipes();
+  const prefs = prefsFor(getUserByToken(req));
+  let recipes = loadAllRecipes().filter((r) => !hardExcluded(r, prefs));
+  const safeRecipes = recipes.filter((r) => matchWarnings(r, prefs).length === 0);
+  if (safeRecipes.length >= 30) recipes = safeRecipes;
   if (recipes.length < 3) throw new HttpError(503, 'not_enough_recipes', '菜谱库不足');
   const usedCount = new Map();
   const days = [];
@@ -742,7 +749,7 @@ route('GET', '/api/recipes/weekly', false, ({ req, res, query }) => {
   sendJSON(res, 200, { start_date: start, target, breakdown, days });
 });
 
-/* --- 菜谱详情（浏览数 +1；带当前用户的点赞/收藏状态） --- */
+/* --- 菜谱详情（浏览数 +1；带点赞/收藏状态与偏好警示） --- */
 route('GET', '/api/recipes/(\\d+)', false, ({ req, res, m }) => {
   const id = Number(m[1]);
   const row = db.prepare('SELECT * FROM recipes WHERE id = ?').get(id);
@@ -751,7 +758,9 @@ route('GET', '/api/recipes/(\\d+)', false, ({ req, res, m }) => {
   row.views = Number(row.views) + 1;
   const optUser = getUserByToken(req);
   const sm = userStateMap(optUser && optUser.id, [id]);
-  sendJSON(res, 200, { item: recipeOut(row, sm.get(id)) });
+  const item = recipeOut(row, sm.get(id));
+  if (optUser) item.warnings = matchWarnings(row, prefsFor(optUser));
+  sendJSON(res, 200, { item });
 });
 
 /* --- 菜谱视频教程（B站搜索；带缓存/限流/降级，任何上游失败都走跳转兜底不报错） --- */
@@ -913,6 +922,74 @@ route('DELETE', '/api/family/(\\d+)', true, ({ res, m, user }) => {
   sendJSON(res, 200, { ok: true });
 });
 
+/* --- 饮食偏好：不喜欢/忌口/病理/菜系 --- */
+const CONDITION_PRESETS = {
+  cold:        { label: '感冒',        avoid: ['辣椒', '花椒', '小米辣', '冰', '肥肉'] },
+  diabetes:    { label: '糖尿病',      avoid: ['白糖', '冰糖', '红糖', '蜂蜜', '可乐'] },
+  hypertension:{ label: '高血压',      avoid: ['咸菜', '腌', '豆瓣酱', '腐乳'] },
+  gout:        { label: '痛风',        avoid: ['虾', '蟹', '贝', '鱼头', '鱼', '海鲜', '腰', '肝', '啤酒', '浓汤'] },
+  gastritis:   { label: '肠胃炎',      avoid: ['辣椒', '花椒', '冰', '肥肉'] },
+  hyperlipid:  { label: '高血脂',      avoid: ['肥肉', '五花肉', '猪油', '油炸'] },
+  lactose:     { label: '乳糖不耐受',  avoid: ['牛奶', '奶油', '芝士', '奶酪'] },
+  pregnancy:   { label: '孕期',        avoid: ['冰', '酒', '咖啡'] },
+};
+
+function prefsFor(user) {
+  let p = { dislikes: [], allergens: [], conditions: [], cuisines: [] };
+  try {
+    const raw = user && user.prefs_json ? JSON.parse(user.prefs_json) : null;
+    if (raw && typeof raw === 'object') {
+      for (const k of ['dislikes', 'allergens', 'conditions', 'cuisines']) {
+        if (Array.isArray(raw[k])) p[k] = raw[k].map(String).slice(0, 30);
+      }
+    }
+  } catch { }
+  return p;
+}
+
+/* 计算一道菜对当前用户偏好的警示：返回 [{tag, label, reason}]（仅按食材匹配，避免菜名误伤如"鱼香肉丝"） */
+function matchWarnings(recipe, prefs) {
+  const warnings = [];
+  const text = String(recipe.ingredients_json || recipe.ingredients || '');
+  for (const key of prefs.conditions) {
+    const preset = CONDITION_PRESETS[key];
+    if (!preset) continue;
+    const hits = preset.avoid.filter((kw) => text.includes(kw));
+    if (hits.length) {
+      warnings.push({ tag: key, label: preset.label, reason: `含「${hits.join('、')}」（你设置了${preset.label}宜避免）` });
+    }
+  }
+  return warnings;
+}
+
+/* 硬排除判断：allergens/conditions 命中（allergens 命中=排除；conditions 命中=保留但警示） */
+function hardExcluded(recipe, prefs) {
+  const text = typeof (recipe.ingredients_json || recipe.ingredients || '') === 'string'
+    ? (recipe.ingredients_json || recipe.ingredients || '') : JSON.stringify(recipe.ingredients || '');
+  return prefs.allergens.some((kw) => text.includes(kw));
+}
+
+route('GET', '/api/me/preferences', true, ({ res, user }) => {
+  sendJSON(res, 200, { ok: true, preferences: prefsFor(user) });
+});
+route('GET', '/api/me/preferences/conditions', false, ({ res }) => {
+  sendJSON(res, 200, { ok: true, items: Object.entries(CONDITION_PRESETS).map(([key, v]) => ({ key, label: v.label, avoid: v.avoid.join('、') })) });
+});
+route('PUT', '/api/me/preferences', true, ({ res, user, body }) => {
+  const p = prefsFor(user);
+  for (const k of ['dislikes', 'allergens', 'conditions', 'cuisines']) {
+    if (Array.isArray(body[k])) {
+      const arr = body[k].map(String).map((x) => x.trim()).filter(Boolean);
+      if (arr.some((x) => x.length > 12)) throw bad(`${k} 单项不能超过 12 字`);
+      if (arr.length > 30) throw bad(`${k} 数量过多（≤30）`);
+      p[k] = [...new Set(arr)];
+    }
+  }
+  db.prepare('UPDATE users SET prefs_json = ? WHERE id = ?').run(JSON.stringify(p), user.id);
+  const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+  sendJSON(res, 200, { ok: true, preferences: prefsFor(fresh) });
+});
+
 /* --- 用户发布菜谱（AI 量化结果确认后入库，source='user'） --- */
 route('POST', '/api/recipes', true, ({ res, user, body }) => {
   const name = String(body.name || '').trim();
@@ -1013,20 +1090,26 @@ route('GET', '/api/recommend/by-ingredients', true, ({ res, user, query }) => {
   const pantryRows = db.prepare('SELECT name FROM user_ingredients WHERE user_id = ?').all(user.id);
   const pantry = new Set(pantryRows.map((r) => r.name));
   const isExempt = (name) => EXEMPT_INGREDIENTS.some((t) => name.includes(t));
+  const prefs = prefsFor(user);
   const items = [];
   for (const row of loadAllRecipes()) {
     let ings = [];
     try { ings = JSON.parse(row.ingredients_json); } catch { }
+    const ingText = JSON.stringify(ings);
+    // 忌口/过敏/不喜欢：命中的菜直接不推荐
+    const banned = [...prefs.allergens, ...prefs.dislikes].find((kw) => ingText.includes(kw));
+    if (banned) continue;
     const required = ings.map((i) => i.name).filter((n) => !isExempt(n));
     const missing = required.filter((n) => !pantry.has(n));
     const matched = required.length - missing.length;
+    const warnings = matchWarnings(row, prefs);
     if (mode === 'strict') {
       if (missing.length === 0 && required.length > 0) {
-        items.push({ recipe: recipeOut(row), matched, required_total: required.length, missing: [] });
+        items.push({ recipe: recipeOut(row), matched, required_total: required.length, missing: [], warnings });
       }
     } else {
       if (missing.length >= 1 && missing.length <= 2) {
-        items.push({ recipe: recipeOut(row), matched, required_total: required.length, missing });
+        items.push({ recipe: recipeOut(row), matched, required_total: required.length, missing, warnings });
       }
     }
   }

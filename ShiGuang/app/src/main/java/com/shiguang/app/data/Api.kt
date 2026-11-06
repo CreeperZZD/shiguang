@@ -91,6 +91,8 @@ data class Recipe(
     val coverUrl: String? = null,
     val liked: Boolean = false,
     val favorited: Boolean = false,
+    /** 基于个人饮食偏好（忌口/过敏/病理）生成的提示文案 */
+    val warnings: List<String> = emptyList(),
 )
 
 data class User(
@@ -173,7 +175,16 @@ fun JSONObject.toRecipe(): Recipe {
         coverUrl = optString("cover_url").takeIf { it.isNotEmpty() },
         liked = optBoolean("liked"),
         favorited = optBoolean("favorited"),
+        warnings = optStringArray("warnings"),
     )
+}
+
+/** 读取 JSON 数组为字符串列表（缺失/类型不符返回空列表） */
+private fun JSONObject.optStringArray(key: String): List<String> {
+    val arr = optJSONArray(key) ?: return emptyList()
+    val list = mutableListOf<String>()
+    for (i in 0 until arr.length()) list.add(arr.optString(i))
+    return list.filter { it.isNotEmpty() }
 }
 
 data class WeekDayPlan(
@@ -274,13 +285,13 @@ fun JSONArray.recipeList(): List<Recipe> {
     return list
 }
 
-/** 收藏/推荐等接口条目兼容解析：{recipe:{...}} 或直接是菜谱对象 */
+/** 收藏/推荐等接口条目兼容解析：{recipe:{...}, warnings:[...]} 或直接是菜谱对象 */
 fun JSONArray.flexRecipeList(): List<Recipe> {
     val list = mutableListOf<Recipe>()
     for (i in 0 until length()) {
         val o = getJSONObject(i)
         val r = o.optJSONObject("recipe") ?: o
-        if (r.has("name")) list.add(r.toRecipe())
+        if (r.has("name")) list.add(r.toRecipe().copy(warnings = o.optStringArray("warnings")))
     }
     return list
 }

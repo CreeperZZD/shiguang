@@ -131,6 +131,12 @@ CREATE INDEX IF NOT EXISTS idx_comments_post ON comments(post_id);
   catch (e) { if (!/duplicate column/i.test(String(e && e.message))) throw e; }
 })();
 
+/* 增量迁移：users 表加 prefs_json 列（忌口/偏好/病理等饮食偏好），幂等 */
+(function addPrefsColumn() {
+  try { db.exec(`ALTER TABLE users ADD COLUMN prefs_json TEXT`); }
+  catch (e) { if (!/duplicate column/i.test(String(e && e.message))) throw e; }
+})();
+
 /* 首启自动导入种子菜谱（仅当表为空） */
 (function seedIfEmpty() {
   const row = db.prepare('SELECT COUNT(*) AS c FROM recipes').get();

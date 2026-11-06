@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -308,6 +309,32 @@ fun RecipeDetailScreen(id: Long, onBack: () -> Unit, onOpenVideos: (Long) -> Uni
                         AssistChip(onClick = {}, label = { Text(recipe.meatTag) })
                         AssistChip(onClick = {}, label = { Text("${recipe.minutes} 分钟") })
                         AssistChip(onClick = {}, label = { Text("★".repeat(recipe.difficulty)) })
+                    }
+                }
+                if (recipe.warnings.isNotEmpty()) {
+                    item {
+                        Card(
+                            Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(painterResource(R.drawable.ic_bell), contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onErrorContainer)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("饮食提醒", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                recipe.warnings.forEach { w ->
+                                    Text("· $w", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.padding(top = 2.dp))
+                                }
+                                Text(
+                                    "以上内容根据你的饮食偏好自动生成",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.72f),
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                            }
+                        }
                     }
                 }
                 item {
