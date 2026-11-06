@@ -278,7 +278,7 @@ fun QuantifyScreen(onBack: () -> Unit, onPublished: (String) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("✨ AI 帮你规范菜谱") },
+                title = { Text("AI 帮你规范菜谱") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")

@@ -13,13 +13,15 @@ android {
         applicationId = "com.shiguang.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3.0-nightly"
+        versionCode = 4
+        versionName = "3.1.0"
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            // 分发阶段直接用 debug 签名（家人体验包）；正式上架时替换为正式 keystore
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

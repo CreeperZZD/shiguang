@@ -58,9 +58,6 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
     var dinnerN by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(1) }
     var withSoup by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
     var showStructure by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-    var showRoll by remember { mutableStateOf(false) }
-    var rollDish by remember { mutableStateOf<com.shiguang.app.data.Recipe?>(null) }
-    var rolling by remember { mutableStateOf(false) }
 
     fun load(rerollSeed: String?) {
         scope.launch {
@@ -142,76 +139,13 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
         }
     }
 
-    // 摇一摇滚动动画：骰子图标旋转
-    val rollSpin by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (rolling) 1080f else 0f,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 900),
-        label = "rollSpin",
-    )
-
-    fun roll() {
-        if (rolling) return
-        rolling = true
-        showRoll = true
-        rollDish = null
-        scope.launch {
-            try {
-                val r = Api.get("/recipes/random").getJSONObject("item").toRecipe()
-                delay(700) // 让摇一摇动画有仪式感
-                rollDish = r
-            } catch (e: Exception) {
-                err = e.message
-                showRoll = false
-            } finally {
-                rolling = false
-            }
-        }
-    }
+    // 摇一摇已改为全局交互（摇动手机 / 我的页入口），主页不再放卡片
 
     when {
         err != null && plan == null -> ErrorBox(err!!)
         plan == null -> LoadingBox()
         else -> {
             val p = plan!!
-            if (showRoll) {
-                androidx.compose.material3.AlertDialog(
-                    onDismissRequest = { if (!rolling) showRoll = false },
-                    title = { Text("🎲 今天吃啥") },
-                    text = {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                            if (rolling || rollDish == null) {
-                                androidx.compose.material3.Icon(
-                                    androidx.compose.ui.res.painterResource(com.shiguang.app.R.drawable.ic_dice),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .graphicsLayer { rotationZ = rollSpin },
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                                Text("摇一摇中…", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            } else {
-                                val d = rollDish!!
-                                Text(d.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    "${d.kcal} kcal · ${d.minutes} 分钟 · ${d.category}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    androidx.compose.material3.FilledTonalButton(onClick = { showRoll = false; onOpenRecipe(d.id) }) { Text("就吃它 →") }
-                                    androidx.compose.material3.FilledTonalButton(onClick = { roll() }) { Text("再摇") }
-                                }
-                            }
-                        }
-                    },
-                    confirmButton = {},
-                    dismissButton = {
-                        androidx.compose.material3.TextButton(onClick = { if (!rolling) showRoll = false }) { Text("关闭") }
-                    },
-                )
-            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
@@ -297,28 +231,6 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                                     )
                                 }
                             }
-                        }
-                    }
-                }
-                item {
-                    Card(
-                        Modifier.fillMaxWidth().clickable { showRoll = true },
-                        colors = androidx.compose.material3.CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        ),
-                    ) {
-                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            androidx.compose.material3.Icon(
-                                androidx.compose.ui.res.painterResource(com.shiguang.app.R.drawable.ic_dice),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                            Spacer(Modifier.size(10.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text("今天吃啥？", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                Text("摇一道菜，决定就是它", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Text("摇一摇 →", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }

@@ -19,3 +19,16 @@ node_modules/
 # 系统文件
 Thumbs.db
 .DS_Store
+
+# 审核台 APP 构建产物与本地配置
+ShiGuangAdmin/.gradle/
+ShiGuangAdmin/build/
+ShiGuangAdmin/app/build/
+ShiGuangAdmin/local.properties
+ShiGuangAdmin/.idea/
+
+# 补图临时产物
+backend/miss.json
+backend/seeds.json
+backend/local-covers/
+backend/tmp_missing.json

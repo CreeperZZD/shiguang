@@ -79,7 +79,7 @@ private fun JSONObject.toDiaryEntry(): DiaryEntry = DiaryEntry(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DiaryScreen(onBack: () -> Unit) {
+fun DiaryScreen(onBack: () -> Unit, onLogin: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     var date by remember { mutableStateOf(todayStr()) }
     var data by remember { mutableStateOf<DiaryData?>(null) }
@@ -161,6 +161,24 @@ fun DiaryScreen(onBack: () -> Unit) {
             )
         },
     ) { pad ->
+        if (Api.token == null) {
+            Column(
+                Modifier.padding(pad).fillMaxSize().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text("日记需要登录后使用", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "登录后日记云端同步，主页餐卡上点「+日记」即可一键记录",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(16.dp))
+                Button(onClick = onLogin) { Text("去登录 / 注册") }
+            }
+            return@Scaffold
+        }
         Column(
             Modifier
                 .padding(pad)

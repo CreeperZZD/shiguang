@@ -16,6 +16,7 @@ const { db } = require('./db');
 const PORT = Number(process.env.PORT || 8000);
 const HOST = process.env.HOST || '0.0.0.0';
 const SECRETS_PATH = process.env.SHIGUANG_SECRETS || '/opt/recipe-app/secrets/llm.json';
+const SECRETS_DIR = path.dirname(SECRETS_PATH);
 const PAGE_SIZE = 10;
 const START_TS = Date.now();
 
@@ -76,10 +77,92 @@ function requireAuth(req) {
 }
 function publicUser(u) {
   return {
-    id: u.id, phone: u.phone, nickname: u.nickname, gender: u.gender, age: u.age,
+    id: u.id, phone: u.phone, email: u.email || null, nickname: u.nickname, gender: u.gender, age: u.age,
     height_cm: u.height_cm, weight_kg: u.weight_kg, activity: u.activity, goal: u.goal,
     created_at: u.created_at,
   };
+}
+
+/* ---------------- 安全防护：IP 限流 + 可选配置 ---------------- */
+
+function clientIp(req) {
+  return String(req.socket.remoteAddress || 'unknown').replace(/^::ffff:/, '').replace(/^::1$/, '127.0.0.1');
+}
+const rateBuckets = new Map(); // key -> { count, resetAt }
+function rateLimit(key, limit, windowMs) {
+  const now = Date.now();
+  let b = rateBuckets.get(key);
+  if (!b || now > b.resetAt) { b = { count: 0, resetAt: now + windowMs }; rateBuckets.set(key, b); }
+  b.count += 1;
+  return b.count <= limit;
+}
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, b] of rateBuckets) if (now > b.resetAt) rateBuckets.delete(k);
+}, 5 * 60 * 1000).unref();
+
+/* 可选配置：secrets/config.json（缺省全部兼容旧行为） */
+let _appConfig = null;
+function appConfig() {
+  if (_appConfig) return _appConfig;
+  try { _appConfig = JSON.parse(fs.readFileSync(path.join(SECRETS_DIR, 'config.json'), 'utf8')); }
+  catch { _appConfig = {}; }
+  return _appConfig;
+}
+
+/* ---------------- SMTP 邮箱验证码（零依赖手写 SMTPS，QQ 邮箱等均可） ---------------- */
+
+let _smtpConfig = null;
+function smtpConfig() {
+  if (_smtpConfig !== null) return _smtpConfig;
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(SECRETS_DIR, 'smtp.json'), 'utf8'));
+    _smtpConfig = cfg && cfg.user && cfg.pass && cfg.from ? cfg : null;
+  } catch { _smtpConfig = null; }
+  return _smtpConfig;
+}
+
+function smtpSend(cfg, to, subject, text) {
+  const tls = require('node:tls');
+  return new Promise((resolve, reject) => {
+    const cmds = [
+      `EHLO shiguang.local`,
+      'AUTH LOGIN',
+      Buffer.from(cfg.user).toString('base64'),
+      Buffer.from(cfg.pass).toString('base64'),
+      `MAIL FROM:<${cfg.from}>`,
+      `RCPT TO:<${to}>`,
+      'DATA',
+      'From: =?UTF-8?B?' + Buffer.from('食光').toString('base64') + '?= <' + cfg.from + '>\r\n' +
+      'To: <' + to + '>\r\n' +
+      'Subject: =?UTF-8?B?' + Buffer.from(subject).toString('base64') + '?=\r\n' +
+      'MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n' +
+      text.replace(/\r?\n/g, '\r\n') + '\r\n.',
+      'QUIT',
+    ];
+    const okCodes = [[220], [250], [334], [334], [235], [250], [250, 251], [354], [250], [221]];
+    let idx = 0;
+    let buf = '';
+    let done = false;
+    const sock = tls.connect({ host: cfg.host || 'smtp.qq.com', port: cfg.port || 465, rejectUnauthorized: false }, () => { });
+    sock.setEncoding('utf8');
+    const fail = (e) => { if (!done) { done = true; try { sock.destroy(); } catch { } reject(e); } };
+    sock.on('error', (e) => fail(new HttpError(502, 'smtp_error', '邮件服务暂时不可用')));
+    sock.on('data', (chunk) => {
+      buf += chunk;
+      if (!/\r\n$/.test(buf)) return; // 等一整条响应
+      const code = parseInt(buf.slice(0, 3), 10);
+      buf = '';
+      if (isNaN(code)) return fail(new HttpError(502, 'smtp_error', '邮件服务响应异常'));
+      const allowed = okCodes[idx] || [250];
+      if (!allowed.includes(code)) return fail(new HttpError(502, 'smtp_error', '邮件发送失败(' + code + ')'));
+      const cmd = cmds[idx]; idx += 1;
+      if (!cmd) { if (!done) { done = true; sock.end(); resolve(); } return; }
+      sock.write(cmd + '\r\n');
+    });
+    sock.on('close', () => { if (!done) { done = true; resolve(); } });
+    setTimeout(() => fail(new HttpError(502, 'smtp_timeout', '邮件发送超时')), 15000).unref?.();
+  });
 }
 
 /* ---------------- 身体数据计算 ---------------- */
@@ -676,27 +759,89 @@ route('GET', '/api/health', false, ({ res }) => {
   });
 });
 
-/* --- 认证（测试模式：验证码固定 888888） --- */
-route('POST', '/api/auth/request-code', false, ({ res, body }) => {
+/* --- 认证：手机号验证码（测试码可经 secrets/config.json 关闭）+ 邮箱验证码 --- */
+
+function issueToken(user) {
+  const token = crypto.randomBytes(32).toString('hex');
+  db.prepare("INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now','localtime','+30 days'))").run(token, user.id);
+  return token;
+}
+
+route('POST', '/api/auth/request-code', false, ({ req, res, body }) => {
+  const ip = clientIp(req);
+  if (!rateLimit('rc:' + ip, 20, 60 * 60 * 1000)) throw new HttpError(429, 'rate_limited', '验证码请求过于频繁，请稍后再试');
   const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
   if (!/^1\d{10}$/.test(phone)) throw bad('phone 必须为 11 位手机号');
-  sendJSON(res, 200, { ok: true, test_mode: true, dev_code: '888888', expires_in: 600, message: '测试模式：验证码固定为 888888' });
+  const allowTest = appConfig().allow_test_code !== false; // 未配置默认开放，上线建议改为 false
+  sendJSON(res, 200, {
+    ok: true, test_mode: allowTest, dev_code: allowTest ? '888888' : null, expires_in: 600,
+    message: allowTest ? '测试模式：验证码固定为 888888' : '验证码暂未开放短信通道，请使用邮箱注册',
+  });
 });
 
-route('POST', '/api/auth/login', false, ({ res, body }) => {
+route('POST', '/api/auth/login', false, ({ req, res, body }) => {
+  const ip = clientIp(req);
+  if (!rateLimit('login:' + ip, 20, 60 * 60 * 1000)) throw new HttpError(429, 'rate_limited', '尝试过于频繁，请稍后再试');
   const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
   if (!/^1\d{10}$/.test(phone)) throw bad('phone 必须为 11 位手机号');
   const code = typeof body.code === 'string' ? body.code.trim() : '';
   if (!code) throw bad('code 不能为空');
-  if (code !== '888888') throw new HttpError(401, 'invalid_code', '验证码错误或已过期');
+  const allowTest = appConfig().allow_test_code !== false;
+  if (!allowTest || code !== '888888') throw new HttpError(401, 'invalid_code', '验证码错误或已过期');
   let user = db.prepare('SELECT * FROM users WHERE phone = ?').get(phone);
   if (!user) {
     db.prepare('INSERT INTO users (phone, nickname) VALUES (?, ?)').run(phone, '食光用户' + phone.slice(-4));
     user = db.prepare('SELECT * FROM users WHERE phone = ?').get(phone);
   }
-  const token = crypto.randomBytes(32).toString('hex');
-  db.prepare("INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now','localtime','+30 days'))").run(token, user.id);
-  sendJSON(res, 200, { ok: true, token, user: publicUser(user) });
+  sendJSON(res, 200, { ok: true, token: issueToken(user), user: publicUser(user) });
+});
+
+/* --- 邮箱验证码注册/登录（需服务器配置 secrets/smtp.json，未配置则返回 email_disabled） --- */
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+route('POST', '/api/auth/email-code', false, async ({ req, res, body }) => {
+  const ip = clientIp(req);
+  if (!rateLimit('ec:' + ip, 10, 60 * 60 * 1000)) throw new HttpError(429, 'rate_limited', '验证码请求过于频繁，请 1 小时后再试');
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  if (!EMAIL_RE.test(email) || email.length > 60) throw bad('email 格式不正确');
+  if (!rateLimit('ecm:' + email, 1, 60 * 1000)) throw new HttpError(429, 'rate_limited', '同一邮箱 60 秒内只能获取一次验证码');
+  const cfg = smtpConfig();
+  if (!cfg) throw new HttpError(503, 'email_disabled', '邮箱注册暂未开放，可先游客模式浏览');
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  db.prepare(`INSERT INTO email_codes (email, code, expires_at, attempts, last_ip)
+    VALUES (?, ?, datetime('now','localtime','+10 minutes'), 0, ?)
+    ON CONFLICT(email) DO UPDATE SET code=excluded.code, expires_at=excluded.expires_at, attempts=0, last_ip=excluded.last_ip, created_at=datetime('now','localtime')`)
+    .run(email, code, ip);
+  try {
+    await smtpSend(cfg, email, '食光登录验证码', `你的验证码是：${code}\n\n10 分钟内有效。若非本人操作请忽略本邮件。\n\n—— 食光 App`);
+  } catch (e) {
+    if (e instanceof HttpError) throw e;
+    throw new HttpError(502, 'smtp_error', '邮件发送失败，请稍后再试');
+  }
+  sendJSON(res, 200, { ok: true, expires_in: 600 });
+});
+
+route('POST', '/api/auth/email-login', false, ({ req, res, body }) => {
+  const ip = clientIp(req);
+  if (!rateLimit('el:' + ip, 20, 60 * 60 * 1000)) throw new HttpError(429, 'rate_limited', '尝试过于频繁，请稍后再试');
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  if (!EMAIL_RE.test(email)) throw bad('email 格式不正确');
+  const code = typeof body.code === 'string' ? body.code.trim() : '';
+  const row = db.prepare("SELECT * FROM email_codes WHERE email = ? AND expires_at > datetime('now','localtime')").get(email);
+  if (!row) throw new HttpError(401, 'invalid_code', '验证码已过期，请重新获取');
+  if (Number(row.attempts) >= 5) throw new HttpError(429, 'too_many_attempts', '错误次数过多，请重新获取验证码');
+  if (row.code !== code) {
+    db.prepare('UPDATE email_codes SET attempts = attempts + 1 WHERE email = ?').run(email);
+    throw new HttpError(401, 'invalid_code', '验证码错误');
+  }
+  db.prepare('DELETE FROM email_codes WHERE email = ?').run(email);
+  let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  if (!user) {
+    const nickname = '食友' + email.slice(0, 3) + email.split('@')[0].slice(-2);
+    db.prepare('INSERT INTO users (phone, email, nickname) VALUES (?, ?, ?)').run('email:' + email, email, nickname);
+    user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  }
+  sendJSON(res, 200, { ok: true, token: issueToken(user), user: publicUser(user) });
 });
 
 /* --- 个人档案 --- */
@@ -1183,6 +1328,123 @@ route('DELETE', '/api/diary/(\\d+)', true, ({ res, user, m }) => {
   sendJSON(res, 200, { ok: true });
 });
 
+/* --- 用户上传菜谱制作流程图（先审后展：pending → 管理员 approve → 详情页可见） --- */
+const PHOTO_DIR = path.join(__dirname, 'photos');
+if (!fs.existsSync(PHOTO_DIR)) fs.mkdirSync(PHOTO_DIR, { recursive: true });
+const DOWNLOAD_DIR = path.join(__dirname, 'downloads');
+
+route('POST', '/api/recipes/(\\d+)/photos', true, ({ req, res, user, m, body }) => {
+  if (!rateLimit('up:' + clientIp(req), 5, 60 * 60 * 1000)) throw new HttpError(429, 'rate_limited', '上传过于频繁，请明天再试');
+  const recipeId = Number(m[1]);
+  if (!db.prepare('SELECT id FROM recipes WHERE id = ?').get(recipeId)) throw new HttpError(404, 'recipe_not_found');
+  let b64 = typeof body.image_base64 === 'string' ? body.image_base64.trim() : '';
+  const dm = /^data:image\/(jpeg|jpg|png|webp);base64,/.exec(b64);
+  if (dm) b64 = b64.slice(dm[0].length);
+  if (b64.length < 100) throw bad('image_base64 必填');
+  if (b64.length > 800 * 1024) throw bad('图片过大（base64 需 ≤ 800KB，请压缩后上传）');
+  if (!/^[A-Za-z0-9+/=\s]+$/.test(b64)) throw bad('image_base64 格式不合法');
+  const file = 'p' + Date.now() + '-' + crypto.randomBytes(4).toString('hex') + '.jpg';
+  fs.writeFileSync(path.join(PHOTO_DIR, file), Buffer.from(b64.replace(/\s+/g, ''), 'base64'));
+  const ret = db.prepare("INSERT INTO recipe_photos (recipe_id, user_id, file, status) VALUES (?, ?, ?, 'pending')")
+    .run(recipeId, user.id, file);
+  sendJSON(res, 200, { ok: true, photo_id: Number(ret.lastInsertRowid), status: 'pending', message: '已提交，审核通过后将展示在菜谱页' });
+});
+
+route('GET', '/api/recipes/(\\d+)/photos', false, ({ res, m }) => {
+  const rows = db.prepare(`SELECT p.id, p.created_at, u.nickname FROM recipe_photos p
+    LEFT JOIN users u ON u.id = p.user_id
+    WHERE p.recipe_id = ? AND p.status = 'approved' ORDER BY p.id DESC LIMIT 20`).all(Number(m[1]));
+  sendJSON(res, 200, { ok: true, items: rows.map((r) => ({ id: r.id, url: '/api/photos/' + r.id, nickname: r.nickname || '食友', created_at: r.created_at })) });
+});
+
+route('GET', '/api/photos/(\\d+)', false, ({ req, res, m }) => {
+  const row = db.prepare("SELECT * FROM recipe_photos WHERE id = ? AND status = 'approved'").get(Number(m[1]));
+  if (!row) throw new HttpError(404, 'photo_not_found');
+  const f = path.join(PHOTO_DIR, path.basename(row.file));
+  if (!fs.existsSync(f)) throw new HttpError(404, 'photo_not_found');
+  const data = fs.readFileSync(f);
+  res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': data.length, 'Cache-Control': 'public, max-age=86400' });
+  res.end(data);
+});
+
+/* --- 管理端：审核流程图 + 统计（X-Admin-Token 鉴权，密钥在 secrets/admin.json） --- */
+let _adminToken = null;
+function adminToken() {
+  if (_adminToken !== null) return _adminToken;
+  try { _adminToken = String(JSON.parse(fs.readFileSync(path.join(SECRETS_DIR, 'admin.json'), 'utf8')).token || ''); }
+  catch { _adminToken = ''; }
+  return _adminToken;
+}
+function requireAdmin(req) {
+  const t = String(req.headers['x-admin-token'] || '');
+  if (!adminToken()) throw new HttpError(503, 'admin_disabled', '服务器未配置管理员密钥');
+  if (!t || t !== adminToken()) throw new HttpError(401, 'unauthorized', '管理员令牌无效');
+}
+
+route('GET', '/api/admin/stats', false, ({ req, res }) => {
+  requireAdmin(req);
+  const c = (sql) => Number(db.prepare(sql).get().c);
+  sendJSON(res, 200, {
+    ok: true,
+    users: c('SELECT COUNT(*) AS c FROM users'),
+    recipes: c("SELECT COUNT(*) AS c FROM recipes WHERE source = 'official'"),
+    user_recipes: c("SELECT COUNT(*) AS c FROM recipes WHERE source = 'user'"),
+    posts: c('SELECT COUNT(*) AS c FROM posts'),
+    comments: c('SELECT COUNT(*) AS c FROM comments'),
+    diary_entries: c('SELECT COUNT(*) AS c FROM diary_entries'),
+    photos_pending: c("SELECT COUNT(*) AS c FROM recipe_photos WHERE status = 'pending'"),
+    photos_approved: c("SELECT COUNT(*) AS c FROM recipe_photos WHERE status = 'approved'"),
+    sessions_active: c("SELECT COUNT(*) AS c FROM sessions WHERE expires_at IS NULL OR expires_at > datetime('now','localtime')"),
+    uptime_sec: Math.floor((Date.now() - START_TS) / 1000),
+    time: new Date().toISOString(),
+  });
+});
+
+route('GET', '/api/admin/photos', false, ({ req, res, query }) => {
+  requireAdmin(req);
+  const status = ['pending', 'approved', 'rejected'].includes(query.get('status')) ? query.get('status') : 'pending';
+  const limit = Math.min(50, Math.max(1, Number(query.get('limit')) || 30));
+  const rows = db.prepare(`SELECT p.*, r.name AS recipe_name, u.nickname FROM recipe_photos p
+    LEFT JOIN recipes r ON r.id = p.recipe_id LEFT JOIN users u ON u.id = p.user_id
+    WHERE p.status = ? ORDER BY p.id ASC LIMIT ?`).all(status, limit);
+  const items = rows.map((r) => {
+    let dataUrl = null;
+    try {
+      const f = path.join(PHOTO_DIR, path.basename(r.file));
+      if (fs.existsSync(f)) dataUrl = 'data:image/jpeg;base64,' + fs.readFileSync(f).toString('base64');
+    } catch { }
+    return { id: r.id, recipe_id: r.recipe_id, recipe_name: r.recipe_name, nickname: r.nickname, status: r.status, created_at: r.created_at, data_url: dataUrl };
+  });
+  sendJSON(res, 200, { ok: true, items });
+});
+
+route('POST', '/api/admin/photos/(\\d+)/review', false, ({ req, res, m, body }) => {
+  requireAdmin(req);
+  const action = String(body.action || '');
+  if (!['approve', 'reject'].includes(action)) throw bad("action 需为 'approve' 或 'reject'");
+  const row = db.prepare('SELECT * FROM recipe_photos WHERE id = ?').get(Number(m[1]));
+  if (!row) throw new HttpError(404, 'photo_not_found');
+  const status = action === 'approve' ? 'approved' : 'rejected';
+  db.prepare('UPDATE recipe_photos SET status = ? WHERE id = ?').run(status, row.id);
+  if (status === 'rejected') {
+    try { fs.unlinkSync(path.join(PHOTO_DIR, path.basename(row.file))); } catch { }
+  }
+  sendJSON(res, 200, { ok: true, id: row.id, status });
+});
+
+/* --- APK 下载（白名单仅 .apk，供直接分发） --- */
+route('GET', '/downloads/([A-Za-z0-9._-]+\\.apk)', false, ({ res, m }) => {
+  const f = path.join(DOWNLOAD_DIR, path.basename(m[1]));
+  if (!fs.existsSync(f)) throw new HttpError(404, 'not_found');
+  const data = fs.readFileSync(f);
+  res.writeHead(200, {
+    'Content-Type': 'application/vnd.android.package-archive',
+    'Content-Length': data.length,
+    'Content-Disposition': 'attachment; filename="' + path.basename(m[1]) + '"',
+  });
+  res.end(data);
+});
+
 /* --- 用户发布菜谱（AI 量化结果确认后入库，source='user'） --- */
 route('POST', '/api/recipes', true, ({ res, user, body }) => {
   const name = String(body.name || '').trim();
@@ -1339,10 +1601,19 @@ route('DELETE', '/api/shopping-list/(\\d+)', true, ({ res, m, user }) => {
 });
 
 /* --- 排行榜（like+favorite+views，前 50；带完整营养与用户收藏态） --- */
-route('GET', '/api/leaderboard', false, ({ req, res }) => {
+route('GET', '/api/leaderboard', false, ({ req, res, query }) => {
+  const SORTS = {
+    hot: '(views + like_count * 3 + favorite_count * 5) DESC, id ASC',
+    new: 'id DESC',
+    views: 'views DESC, id ASC',
+    likes: 'like_count DESC, views DESC, id ASC',
+    favs: 'favorite_count DESC, views DESC, id ASC',
+    ratio: '(like_count * 1.0 / (views + 5)) DESC, views DESC, id ASC', // 好评率：浏览≥5 才有区分度
+  };
+  const sort = SORTS[query.get('sort')] || SORTS.hot;
   const rows = db.prepare(`SELECT id, name, intro, category, meat_tag, difficulty, minutes, calorie_tier,
-    ingredients_json, steps_json, kcal, protein, fat, carb, source, views, like_count, favorite_count,
-    (views + like_count + favorite_count) AS score FROM recipes ORDER BY score DESC, id ASC LIMIT 50`).all();
+    ingredients_json, steps_json, kcal, protein, fat, carb, source, views, like_count, favorite_count
+    FROM recipes ORDER BY ${sort} LIMIT 50`).all();
   const optUser = getUserByToken(req);
   const sm = userStateMap(optUser && optUser.id, rows.map((r) => r.id));
   const items = rows.map((r) => recipeOut(r, sm.get(r.id)));
@@ -1466,7 +1737,8 @@ route('GET', '/api/posts/(\\d+)/comments', false, ({ res, m }) => {
 });
 
 /* --- AI：文本菜谱结构化（真实调用 LLM，推理模型：答案在 content） --- */
-route('POST', '/api/ai/quantify-recipe', true, async ({ res, body }) => {
+route('POST', '/api/ai/quantify-recipe', true, async ({ req, res, body }) => {
+  if (!rateLimit('ai:' + clientIp(req), 6, 60 * 1000)) throw new HttpError(429, 'rate_limited', 'AI 调用过于频繁（每分钟 6 次）');
   const text = typeof body.text === 'string' ? body.text.trim() : '';
   if (!text || text.length > 4000) throw bad('text 必填且不超过 4000 字');
   const sys = '你是食谱结构化助手。将用户提供的菜谱文本解析为 JSON，只输出 JSON 本身，'
@@ -1486,7 +1758,8 @@ route('POST', '/api/ai/quantify-recipe', true, async ({ res, body }) => {
 });
 
 /* --- AI：拍冰箱识别食材（支持多图合并识别，最多 4 张） --- */
-route('POST', '/api/ai/recognize-ingredients', true, async ({ res, body }) => {
+route('POST', '/api/ai/recognize-ingredients', true, async ({ req, res, body }) => {
+  if (!rateLimit('ai:' + clientIp(req), 6, 60 * 1000)) throw new HttpError(429, 'rate_limited', 'AI 调用过于频繁（每分钟 6 次）');
   const images = [];
   const pushB64 = (raw) => {
     let b64 = typeof raw === 'string' ? raw.trim() : '';
@@ -1520,6 +1793,10 @@ route('POST', '/api/ai/recognize-ingredients', true, async ({ res, body }) => {
 
 const server = http.createServer(async (req, res) => {
   try {
+    // 全局 IP 限流：120 次/分钟，防爬虫与滥用
+    if (!rateLimit('g:' + clientIp(req), 120, 60 * 1000)) {
+      return sendJSON(res, 429, { error: 'rate_limited', detail: '请求过于频繁，请稍后再试' });
+    }
     const u = new URL(req.url, 'http://localhost');
     let pathName;
     try { pathName = decodeURIComponent(u.pathname); } catch { throw bad('bad_url'); }

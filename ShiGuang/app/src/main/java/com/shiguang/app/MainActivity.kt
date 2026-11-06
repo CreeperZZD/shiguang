@@ -25,6 +25,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -34,6 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +53,7 @@ import com.shiguang.app.ui.QuantifyScreen
 import com.shiguang.app.ui.SettingsScreen
 import com.shiguang.app.ui.PreferencesScreen
 import com.shiguang.app.ui.DiaryScreen
+import com.shiguang.app.ui.ShakeScreen
 import com.shiguang.app.ui.SquareScreen
 import com.shiguang.app.ui.WeeklyReportScreen
 import com.shiguang.app.ui.MineScreen
@@ -100,6 +103,8 @@ fun App(onSetTheme: (String) -> Unit = {}) {
 
     LaunchedEffect(Unit) {
         if (Session.token == null) {
+            // 游客身份仍可进入浏览（不登录，数据存本机）
+            if (Session.guest) { route = "main"; return@LaunchedEffect }
             route = "login"
             return@LaunchedEffect
         }
@@ -122,7 +127,7 @@ fun App(onSetTheme: (String) -> Unit = {}) {
         }
     }
 
-    BackHandler(enabled = route.startsWith("detail:") || route == "edit" || route == "weekly" || route.startsWith("videos:") || route == "leaderboard" || route == "square" || route == "quantify" || route == "fridgescan" || route == "family" || route == "report" || route == "settings" || route == "prefs" || route == "diary") {
+    BackHandler(enabled = route.startsWith("detail:") || route == "edit" || route == "weekly" || route.startsWith("videos:") || route == "leaderboard" || route == "square" || route == "quantify" || route == "fridgescan" || route == "family" || route == "report" || route == "settings" || route == "prefs" || route == "diary" || route == "shake") {
         route = when {
             route.startsWith("detail:") -> detailReturn
             route.startsWith("videos:") -> "detail:" + route.substringAfter("videos:")
@@ -131,11 +136,40 @@ fun App(onSetTheme: (String) -> Unit = {}) {
         }
     }
 
+    // 摇一摇：任意页面摇动手机 → 进入摇一摇页（加速度传感器，阈值 2.6g，防抖 1.5s）
+    val ctx = LocalContext.current
+    DisposableEffect(ctx) {
+        val sm = ctx.getSystemService(android.content.Context.SENSOR_SERVICE) as? android.hardware.SensorManager
+        val sensor = sm?.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
+        var lastShake = 0L
+        val listener = object : android.hardware.SensorEventListener {
+            override fun onSensorChanged(e: android.hardware.SensorEvent) {
+                val gx = e.values[0] / android.hardware.SensorManager.GRAVITY_EARTH
+                val gy = e.values[1] / android.hardware.SensorManager.GRAVITY_EARTH
+                val gz = e.values[2] / android.hardware.SensorManager.GRAVITY_EARTH
+                val g = kotlin.math.sqrt(gx * gx + gy * gy + gz * gz.toDouble())
+                if (g > 2.6) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastShake > 1500) {
+                        lastShake = now
+                        route = "shake"
+                    }
+                }
+            }
+            override fun onAccuracyChanged(s: android.hardware.Sensor?, accuracy: Int) {}
+        }
+        sm?.registerListener(listener, sensor, android.hardware.SensorManager.SENSOR_DELAY_NORMAL)
+        onDispose { sm?.unregisterListener(listener) }
+    }
+
     when {
         route == "boot" -> Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center) {
             Text("食光", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         }
-        route == "login" -> LoginScreen { complete -> route = if (complete) "main" else "profile" }
+        route == "login" -> LoginScreen(
+            onLoginDone = { complete -> Session.guest = false; route = if (complete) "main" else "profile" },
+            onGuest = { Session.guest = true; route = "main" },
+        )
         route == "profile" -> ProfileScreen(
             initialMeJson = Session.meJson(),
             onSaved = { json -> meJson = json; Session.saveMeJson(json); route = "main" },
@@ -179,7 +213,11 @@ fun App(onSetTheme: (String) -> Unit = {}) {
         route == "family" -> FamilyScreen(onBack = { route = "main" })
         route == "settings" -> SettingsScreen(onBack = { route = "main" }, onOpenPrefs = { route = "prefs" })
         route == "prefs" -> PreferencesScreen(onBack = { route = "settings" })
-        route == "diary" -> DiaryScreen(onBack = { route = "main" })
+        route == "diary" -> DiaryScreen(onBack = { route = "main" }, onLogin = { route = "login" })
+        route == "shake" -> ShakeScreen(
+            onBack = { route = "main" },
+            onOpenRecipe = { detailReturn = "main"; route = "detail:$it" },
+        )
         route == "report" -> WeeklyReportScreen(
             target = Session.currentMemberTarget ?: parseMe(meJson ?: "")?.targetCalories?.toInt(),
             onBack = { route = "main" },
@@ -196,6 +234,8 @@ fun App(onSetTheme: (String) -> Unit = {}) {
             onOpenReport = { route = "report" },
             onOpenSettings = { route = "settings" },
             onOpenDiary = { route = "diary" },
+            onOpenShake = { route = "shake" },
+            onOpenLogin = { route = "login" },
             onEditProfile = { route = "edit" },
             onSetTheme = onSetTheme,
             onLogout = {
@@ -218,6 +258,8 @@ fun MainTabs(
     onOpenReport: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenDiary: () -> Unit = {},
+    onOpenShake: () -> Unit = {},
+    onOpenLogin: () -> Unit = {},
     onEditProfile: () -> Unit,
     onSetTheme: (String) -> Unit = {},
     onLogout: () -> Unit,
@@ -286,6 +328,8 @@ fun MainTabs(
                     onOpenFamily = onOpenFamily,
                     onOpenReport = onOpenReport,
                     onOpenSettings = onOpenSettings,
+                    onOpenShake = onOpenShake,
+                    onLogin = onOpenLogin,
                 )
                 }
             }

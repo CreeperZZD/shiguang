@@ -29,6 +29,22 @@ object Session {
 
     fun setFavs(ids: Set<String>) = prefs.edit().putStringSet("favs", ids).apply()
 
+    /** 游客模式：不登录使用，数据仅存本机 */
+    var guest: Boolean
+        get() = prefs.getBoolean("guest", false)
+        set(v) = prefs.edit().putBoolean("guest", v).apply()
+
+    /** 自定义 AI 识别接口（用户自带 API；留空=用官方服务器） */
+    var aiBaseUrl: String?
+        get() = prefs.getString("ai_base_url", null)
+        set(v) = prefs.edit().putString("ai_base_url", v).apply()
+    var aiApiKey: String?
+        get() = prefs.getString("ai_api_key", null)
+        set(v) = prefs.edit().putString("ai_api_key", v).apply()
+    var aiModel: String?
+        get() = prefs.getString("ai_model", null)
+        set(v) = prefs.edit().putString("ai_model", v).apply()
+
     fun clear() = prefs.edit().clear().apply()
 
     /** 附近在吃：记住上次查询的城市 */

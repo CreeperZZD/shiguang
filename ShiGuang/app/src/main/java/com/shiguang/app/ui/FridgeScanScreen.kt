@@ -51,6 +51,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.shiguang.app.data.Api
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -72,6 +74,7 @@ fun FridgeScanScreen(onDone: (Int) -> Unit, onBack: () -> Unit) {
     var picked by remember { mutableStateOf<Set<String>>(emptySet()) }
     var scanning by remember { mutableStateOf(false) }
     var msg by remember { mutableStateOf<String?>(null) }
+    var noCamPerm by remember { mutableStateOf(false) }
 
     // 拍照：先建临时文件，TakePicture 成功后加入列表
     val pendingCameraUri = remember { mutableStateOf<Uri?>(null) }
@@ -84,6 +87,13 @@ fun FridgeScanScreen(onDone: (Int) -> Unit, onBack: () -> Unit) {
     }
 
     fun shoot() {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.CAMERA)
+            != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            noCamPerm = true
+            msg = "还没有相机权限，无法拍照；可先用相册选图，或点下方「去设置」开启"
+            return
+        }
         val dir = File(ctx.cacheDir, "scan").apply { mkdirs() }
         val file = File(dir, "scan_${System.currentTimeMillis()}.jpg")
         val uri = FileProvider.getUriForFile(ctx, ctx.packageName + ".fileprovider", file)
@@ -102,13 +112,22 @@ fun FridgeScanScreen(onDone: (Int) -> Unit, onBack: () -> Unit) {
                     images.mapNotNull { compressToBase64(ctx, it) }
                 }
                 if (b64s.isEmpty()) throw IllegalStateException("图片读取失败")
-                val resp = Api.post(
-                    "/ai/recognize-ingredients",
-                    JSONObject().put("images", JSONArray(b64s)),
-                )
-                val arr = resp.optJSONArray("ingredients") ?: JSONArray()
-                recognized = (0 until arr.length()).map { arr.getString(it) }
-                picked = recognized!!.toSet()
+                val customBase = com.shiguang.app.data.Session.aiBaseUrl
+                val customKey = com.shiguang.app.data.Session.aiApiKey
+                val names: List<String> = if (!customBase.isNullOrBlank() && !customKey.isNullOrBlank()) {
+                    // 用户自带 OpenAI 兼容视觉接口，手机直连
+                    callCustomVisionApi(customBase.trimEnd('/'), customKey, com.shiguang.app.data.Session.aiModel ?: "qwen-vl-max", b64s)
+                } else {
+                    if (Api.token == null) throw IllegalStateException("游客模式请先在「设置 → AI 识别接口」配置自己的 API，或登录后使用官方服务")
+                    val resp = Api.post(
+                        "/ai/recognize-ingredients",
+                        JSONObject().put("images", JSONArray(b64s)),
+                    )
+                    val arr = resp.optJSONArray("ingredients") ?: JSONArray()
+                    (0 until arr.length()).map { arr.getString(it) }
+                }
+                recognized = names
+                picked = names.toSet()
             } catch (e: Exception) {
                 msg = e.message ?: "识别失败，请重试"
             } finally {
@@ -138,7 +157,7 @@ fun FridgeScanScreen(onDone: (Int) -> Unit, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("📷 拍冰箱识食材") },
+                title = { Text("拍冰箱识食材") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
@@ -158,7 +177,7 @@ fun FridgeScanScreen(onDone: (Int) -> Unit, onBack: () -> Unit) {
             )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 FilledTonalButton(onClick = { shoot() }, enabled = images.size < 4, modifier = Modifier.weight(1f)) {
-                    Text("📷 拍照")
+                    Text("拍照")
                 }
                 FilledTonalButton(
                     onClick = {
@@ -243,7 +262,7 @@ fun FridgeScanScreen(onDone: (Int) -> Unit, onBack: () -> Unit) {
     }
 }
 
-private fun compressToBase64(context: android.content.Context, uri: Uri): String? = runCatching {
+internal fun compressToBase64(context: android.content.Context, uri: Uri): String? = runCatching {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
     var sample = 1
@@ -257,3 +276,44 @@ private fun compressToBase64(context: android.content.Context, uri: Uri): String
     bmp.recycle()
     Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
 }.getOrNull()
+
+/** 直连用户自配的 OpenAI 兼容视觉接口（设置 → AI 识别接口），返回食材名列表 */
+private fun callCustomVisionApi(baseUrl: String, apiKey: String, model: String, b64s: List<String>): List<String> {
+    val prompt = "这些是用户冰箱/厨房的照片。识别所有照片中出现的可食用食材，去重合并为一个清单；" +
+        "包装食品给出通用食材名（如\"牛奶\"），不要输出品牌、厨具、餐具。" +
+        "只输出 JSON 字符串数组，例如 [\"番茄\",\"鸡蛋\"]，不要输出任何其他内容。"
+    val content = JSONArray().put(JSONObject().put("type", "text").put("text", prompt))
+    for (b in b64s) {
+        content.put(
+            JSONObject().put("type", "image_url")
+                .put("image_url", JSONObject().put("url", "data:image/jpeg;base64,$b")),
+        )
+    }
+    val body = JSONObject()
+        .put("model", model)
+        .put("messages", JSONArray().put(JSONObject().put("role", "user").put("content", content)))
+        .put("max_tokens", 2048)
+    val jsonType = "application/json; charset=utf-8".toMediaTypeOrNull()
+    val client = okhttp3.OkHttpClient.Builder()
+        .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(150, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
+    val req = okhttp3.Request.Builder()
+        .url(baseUrl + "/chat/completions")
+        .header("Authorization", "Bearer $apiKey")
+        .post(body.toString().toRequestBody(jsonType))
+        .build()
+    client.newCall(req).execute().use { resp ->
+        val text = resp.body?.string() ?: "{}"
+        if (!resp.isSuccessful) throw IllegalStateException("自定义 API 返回 ${resp.code}：${text.take(200)}")
+        val msgContent = JSONObject(text).optJSONArray("choices")?.optJSONObject(0)
+            ?.optJSONObject("message")?.optString("content") ?: ""
+        val s = msgContent.indexOf('[')
+        val e = msgContent.lastIndexOf(']')
+        if (s < 0 || e <= s) throw IllegalStateException("识别结果解析失败：${msgContent.take(120)}")
+        val arr = JSONArray(msgContent.substring(s, e + 1))
+        val out = mutableListOf<String>()
+        for (i in 0 until arr.length()) out.add(arr.getString(i))
+        return out.filter { it.isNotBlank() }.distinct()
+    }
+}

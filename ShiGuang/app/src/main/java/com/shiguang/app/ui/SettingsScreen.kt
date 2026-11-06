@@ -39,12 +39,30 @@ import androidx.compose.ui.unit.dp
 import com.shiguang.app.R
 import com.shiguang.app.data.AppSettings
 import com.shiguang.app.data.Session
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onOpenPrefs: () -> Unit = {}) {
     val ctx = LocalContext.current
     var showTheme by remember { mutableStateOf(false) }
+    // 自定义 AI 识别接口（游客/登录均可用，Key 只存本机）
+    var aiBase by remember { mutableStateOf(Session.aiBaseUrl ?: "") }
+    var aiKey by remember { mutableStateOf(Session.aiApiKey ?: "") }
+    var aiModel by remember { mutableStateOf(Session.aiModel ?: "") }
+    var aiSaved by remember { mutableStateOf(false) }
+
+    fun openAppDetails() {
+        runCatching {
+            val i = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            i.data = android.net.Uri.fromParts("package", ctx.packageName, null)
+            i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            ctx.startActivity(i)
+        }
+    }
+    fun permGranted(p: String) = androidx.core.content.ContextCompat.checkSelfPermission(ctx, p) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
     Scaffold(
         topBar = {
@@ -99,6 +117,90 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPrefs: () -> Unit = {}) {
                     checked = AppSettings.dataSaver,
                     onCheckedChange = { AppSettings.setDataSaver(ctx, it) },
                 )
+            }
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+            Text("权限管理", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "权限被拒绝时对应功能不可用，会提示无权限；点「去设置」可随时打开",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("相机（拍冰箱识食材）", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        if (permGranted(android.Manifest.permission.CAMERA)) "已允许" else "未允许（拍照识别不可用）",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(onClick = { openAppDetails() }) { Text("去设置 ›") }
+            }
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("通知（临期提醒）", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            if (permGranted(android.Manifest.permission.POST_NOTIFICATIONS)) "已允许" else "未允许（临期提醒不弹通知）",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    TextButton(onClick = { openAppDetails() }) { Text("去设置 ›") }
+                }
+            }
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+            Text("AI 识别接口", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "拍冰箱识食材默认使用官方服务器（需登录）。有自己 API 的用户可在此接入（OpenAI 兼容的视觉接口，Key 只保存在本机）：",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = aiBase,
+                onValueChange = { aiBase = it.trim(); aiSaved = false },
+                label = { Text("BASE URL，如 https://dashscope.aliyuncs.com/compatible-mode/v1") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(Modifier.height(6.dp))
+            OutlinedTextField(
+                value = aiKey,
+                onValueChange = { aiKey = it.trim(); aiSaved = false },
+                label = { Text("API Key") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(Modifier.height(6.dp))
+            OutlinedTextField(
+                value = aiModel,
+                onValueChange = { aiModel = it.trim(); aiSaved = false },
+                label = { Text("模型名，如 qwen-vl-max / gpt-4o-mini") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(Modifier.height(8.dp))
+            Row {
+                Button(onClick = {
+                    Session.aiBaseUrl = aiBase.ifBlank { null }
+                    Session.aiApiKey = aiKey.ifBlank { null }
+                    Session.aiModel = aiModel.ifBlank { null }
+                    aiSaved = true
+                }) { Text(if (aiSaved) "已保存 ✓" else "保存") }
+                Spacer(Modifier.width(10.dp))
+                TextButton(onClick = {
+                    aiBase = ""; aiKey = ""; aiModel = ""
+                    Session.aiBaseUrl = null; Session.aiApiKey = null; Session.aiModel = null
+                    aiSaved = false
+                }) { Text("恢复使用官方服务") }
             }
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))

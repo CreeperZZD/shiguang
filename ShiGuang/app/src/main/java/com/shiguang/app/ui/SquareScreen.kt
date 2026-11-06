@@ -311,7 +311,7 @@ fun SquareScreen(onOpenRecipe: (Long) -> Unit, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (detail == null) "🌐 广场" else "💬 评论") },
+                title = { Text(if (detail == null) "广场" else "评论") },
                 navigationIcon = {
                     IconButton(onClick = { if (detail != null) exitDetail() else onBack() }) {
                         Icon(
@@ -368,7 +368,7 @@ fun SquareScreen(onOpenRecipe: (Long) -> Unit, onBack: () -> Unit) {
                         err != null -> ErrorBox(err!!)
                         loading -> LoadingBox()
                         tab == SquareTab.NEARBY && nearbyCity == null ->
-                            CenterHint("输入城市名称，看看附近的人正在吃什么 📍")
+                            CenterHint("输入城市名称，看看附近的人正在吃什么")
                         posts.isEmpty() ->
                             CenterHint("还没有动态，点 + 分享你的做菜心得")
                         else -> LazyColumn(
@@ -545,7 +545,7 @@ private fun PostCard(
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    listOfNotNull(post.city?.let { "📍$it" }, prettyTime(post.createdAt)).joinToString(" · "),
+                    listOfNotNull(post.city?.let { "$it" }, prettyTime(post.createdAt)).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -558,13 +558,13 @@ private fun PostCard(
                 AssistChip(
                     onClick = { onOpenRecipe(rid) },
                     label = {
-                        Text("🍳 " + (recipeName?.takeIf { it.isNotBlank() } ?: "菜谱 #$rid"))
+                        Text((recipeName?.takeIf { it.isNotBlank() } ?: "菜谱 #$rid"))
                     },
                 )
             }
             Spacer(Modifier.height(8.dp))
             Text(
-                "💬 ${post.commentCount} 条评论",
+                "${post.commentCount} 条评论",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

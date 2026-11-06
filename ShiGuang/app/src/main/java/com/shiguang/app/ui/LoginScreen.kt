@@ -18,11 +18,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,14 +37,36 @@ import com.shiguang.app.data.parseMe
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
+private val EMAIL_RE = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+
+/** 登录/注册：手机号验证码（服务器测试模式）或邮箱验证码；也可「先逛逛」游客浏览 */
 @Composable
-fun LoginScreen(onLoginDone: (profileComplete: Boolean) -> Unit) {
+fun LoginScreen(onLoginDone: (profileComplete: Boolean) -> Unit, onGuest: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
+    var mode by rememberSaveable { mutableStateOf("phone") } // phone | email
     var phone by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf<String?>(null) }
     var msgGood by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
+
+    fun done(token: String) {
+        scope.launch {
+            try {
+                Session.token = token
+                Api.token = token
+                val me = Api.get("/me")
+                Session.saveMeJson(me.toString())
+                val complete = parseMe(me.toString())?.bmi != null
+                onLoginDone(complete)
+            } catch (e: Exception) {
+                // 登录成功但拉档案失败：仍进入主界面（离线兜底）
+                Session.saveMeJson("")
+                onLoginDone(false)
+            }
+        }
+    }
 
     Box(
         Modifier
@@ -65,16 +89,37 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean) -> Unit) {
                 color = MaterialTheme.colorScheme.primary,
             )
             Text("好好吃饭的时光", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
-            Spacer(Modifier.height(36.dp))
+            Spacer(Modifier.height(24.dp))
 
-            OutlinedTextField(
-                value = phone,
-                onValueChange = { phone = it.filter { c -> c.isDigit() }.take(11) },
-                label = { Text("手机号") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { mode = "phone"; msg = null }) {
+                    Text(if (mode == "phone") "手机号登录 ✓" else "手机号登录")
+                }
+                OutlinedButton(onClick = { mode = "email"; msg = null }) {
+                    Text(if (mode == "email") "邮箱登录 ✓" else "邮箱登录")
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+
+            if (mode == "phone") {
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it.filter { c -> c.isDigit() }.take(11) },
+                    label = { Text("手机号") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it.trim() },
+                    label = { Text("邮箱") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
@@ -89,29 +134,31 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean) -> Unit) {
                     onClick = {
                         scope.launch {
                             msg = null
-                            if (phone.length != 11) {
-                                msg = "请输入 11 位手机号"; msgGood = false
-                                return@launch
-                            }
                             busy = true
                             try {
-                                val r = Api.post("/auth/request-code", JSONObject().put("phone", phone), auth = false)
+                                val r = if (mode == "phone") {
+                                    if (phone.length != 11) { msg = "请输入 11 位手机号"; msgGood = false; busy = false; return@launch }
+                                    Api.post("/auth/request-code", JSONObject().put("phone", phone), auth = false)
+                                } else {
+                                    if (!EMAIL_RE.matches(email)) { msg = "邮箱格式不正确"; msgGood = false; busy = false; return@launch }
+                                    Api.post("/auth/email-code", JSONObject().put("email", email), auth = false)
+                                }
                                 val dev = r.optString("dev_code")
                                 if (dev.isNotEmpty()) {
                                     code = dev
                                     msg = "测试模式：验证码已自动填入"
                                 } else {
-                                    msg = "验证码已发送"
+                                    msg = "验证码已发送，请查收"
                                 }
                                 msgGood = true
                             } catch (e: Exception) {
-                                msg = e.message ?: (e.javaClass.simpleName + " 请求异常"); msgGood = false
+                                msg = e.message ?: "请求异常"; msgGood = false
                             } finally {
                                 busy = false
                             }
                         }
                     },
-                    enabled = !busy && phone.length == 11,
+                    enabled = !busy && (if (mode == "phone") phone.length == 11 else email.contains('@')),
                     modifier = Modifier.padding(start = 8.dp),
                 ) { Text("获取验证码") }
             }
@@ -121,17 +168,12 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean) -> Unit) {
                     scope.launch {
                         msg = null; busy = true
                         try {
-                            val r = Api.post(
-                                "/auth/login",
-                                JSONObject().put("phone", phone).put("code", code),
-                                auth = false,
-                            )
-                            Session.token = r.getString("token")
-                            Api.token = Session.token
-                            val me = Api.get("/me")
-                            Session.saveMeJson(me.toString())
-                            val complete = parseMe(me.toString())?.bmi != null
-                            onLoginDone(complete)
+                            val r = if (mode == "phone") {
+                                Api.post("/auth/login", JSONObject().put("phone", phone).put("code", code), auth = false)
+                            } else {
+                                Api.post("/auth/email-login", JSONObject().put("email", email).put("code", code), auth = false)
+                            }
+                            done(r.getString("token"))
                         } catch (e: Exception) {
                             msg = e.message ?: "登录失败"; msgGood = false
                         } finally {
@@ -139,7 +181,7 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean) -> Unit) {
                         }
                     }
                 },
-                enabled = !busy && phone.isNotEmpty() && code.isNotEmpty(),
+                enabled = !busy && code.isNotEmpty() && (if (mode == "phone") phone.isNotEmpty() else email.isNotEmpty()),
                 modifier = Modifier.fillMaxWidth().height(54.dp),
             ) {
                 Text(if (busy) "登录中…" else "登录 / 注册", style = MaterialTheme.typography.titleMedium)
@@ -152,9 +194,11 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean) -> Unit) {
                     color = if (msgGood) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error,
                 )
             }
+            Spacer(Modifier.height(16.dp))
+            TextButton(onClick = onGuest) { Text("先逛逛（游客模式，不登录也能看） ›") }
         }
         Text(
-            "测试阶段验证码固定为 888888",
+            "游客数据仅保存在本机 · 登录后可云同步",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),

@@ -150,6 +150,40 @@ CREATE INDEX IF NOT EXISTS idx_diary_user_date ON diary_entries(user_id, entry_d
   catch (e) { if (!/duplicate column/i.test(String(e && e.message))) throw e; }
 })();
 
+/* 增量迁移：users 表加 email 列（邮箱注册，选填唯一），幂等 */
+(function addEmailColumn() {
+  try { db.exec(`ALTER TABLE users ADD COLUMN email TEXT`); }
+  catch (e) { if (!/duplicate column/i.test(String(e && e.message))) throw e; }
+})();
+
+/* 增量迁移：邮箱验证码表（有效期/尝试次数/IP 审计），幂等 */
+(function addEmailCodesTable() {
+  db.exec(`
+  CREATE TABLE IF NOT EXISTS email_codes (
+    email TEXT PRIMARY KEY,
+    code TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_ip TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );`);
+})();
+
+/* 增量迁移：用户上传菜谱制作流程图（pending → admin 审核 → approved/rejected），幂等 */
+(function addRecipePhotosTable() {
+  db.exec(`
+  CREATE TABLE IF NOT EXISTS recipe_photos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    recipe_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    file TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_recipe_photos_recipe ON recipe_photos(recipe_id, status);
+  `);
+})();
+
 /* 首启自动导入种子菜谱（仅当表为空） */
 (function seedIfEmpty() {
   const row = db.prepare('SELECT COUNT(*) AS c FROM recipes').get();

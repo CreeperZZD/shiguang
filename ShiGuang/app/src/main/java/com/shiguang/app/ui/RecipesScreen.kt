@@ -1,6 +1,7 @@
 package com.shiguang.app.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -48,6 +49,7 @@ import com.shiguang.app.data.Recipe
 import com.shiguang.app.data.Session
 import com.shiguang.app.data.toRecipe
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URLEncoder
 
@@ -178,11 +180,13 @@ fun RecipesScreen(onOpenRecipe: (Long) -> Unit, onOpenLeaderboard: () -> Unit = 
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Spacer(Modifier.height(2.dp))
-                                Text(
-                                    "👍${r.likeCount} ⭐${r.favoriteCount}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    StatIcon(com.shiguang.app.R.drawable.ic_like, r.likeCount)
+                                    Spacer(Modifier.width(10.dp))
+                                    StatIcon(com.shiguang.app.R.drawable.ic_heart, r.favoriteCount)
+                                    Spacer(Modifier.width(10.dp))
+                                    StatIcon(com.shiguang.app.R.drawable.ic_eye, r.views)
+                                }
                             }
                         }
                     }
@@ -219,10 +223,46 @@ fun RecipeDetailScreen(id: Long, onBack: () -> Unit, onOpenVideos: (Long) -> Uni
     var liked by remember { mutableStateOf(false) }
     var favd by remember { mutableStateOf(false) }
     var countDownMinutes by remember { mutableStateOf<Int?>(null) }
+    var photos by remember { mutableStateOf<List<Triple<Long, String, String>>>(emptyList()) } // id,url,nickname
+    var uploadingPhoto by remember { mutableStateOf(false) }
+    var photoTip by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val ctx = androidx.compose.ui.platform.LocalContext.current
 
+    val pickPhotoLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            uploadingPhoto = true
+            photoTip = null
+            try {
+                val b64 = withContext(kotlinx.coroutines.Dispatchers.IO) { compressToBase64(ctx, uri) }
+                    ?: throw IllegalStateException("图片读取失败")
+                val resp = Api.post("/recipes/$id/photos", org.json.JSONObject().put("image_base64", "data:image/jpeg;base64," + b64))
+                photoTip = resp.optString("message", "已提交，等待审核")
+            } catch (e: Exception) {
+                photoTip = e.message ?: "上传失败"
+            } finally {
+                uploadingPhoto = false
+            }
+        }
+    }
+
+    fun loadPhotos() {
+        scope.launch {
+            runCatching {
+                val arr = Api.get("/recipes/$id/photos", auth = false).optJSONArray("items") ?: org.json.JSONArray()
+                photos = (0 until arr.length()).map { i ->
+                    val o = arr.getJSONObject(i)
+                    Triple(o.getLong("id"), o.getString("url"), o.optString("nickname"))
+                }
+            }
+        }
+    }
+
     LaunchedEffect(id) {
+        loadPhotos()
         try {
             val item = Api.get("/recipes/$id").getJSONObject("item").toRecipe()
             r = item
@@ -236,6 +276,23 @@ fun RecipeDetailScreen(id: Long, onBack: () -> Unit, onOpenVideos: (Long) -> Uni
 
     fun toggle(kind: String) {
         val recipe = r ?: return
+        if (Api.token == null) {
+            // 游客模式：只记在本机，不与服务器交互
+            if (kind == "like") {
+                liked = !liked
+                r = recipe.copy(likeCount = recipe.likeCount + if (liked) 1 else -1, liked = liked)
+                val s = Session.likedIds()
+                if (liked) s.add(id.toString()) else s.remove(id.toString())
+                Session.setLiked(s)
+            } else {
+                favd = !favd
+                r = recipe.copy(favoriteCount = recipe.favoriteCount + if (favd) 1 else -1, favorited = favd)
+                val s = Session.favIds()
+                if (favd) s.add(id.toString()) else s.remove(id.toString())
+                Session.setFavs(s)
+            }
+            return
+        }
         scope.launch {
             try {
                 if (kind == "like") {
@@ -404,6 +461,54 @@ fun RecipeDetailScreen(id: Long, onBack: () -> Unit, onOpenVideos: (Long) -> Uni
                         }
                     }
                 }
+                // 大家的作品：审核通过的用户上传图 + 上传入口
+                item {
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(14.dp)) {
+                            Text("大家的作品", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(8.dp))
+                            if (photos.isEmpty()) {
+                                Text(
+                                    "还没有人晒作品，来当第一个吧",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            } else {
+                                Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    photos.forEach { (pid, url, nick) ->
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            coil.compose.AsyncImage(
+                                                model = com.shiguang.app.data.Api.BASE.substringBefore("/api") + url,
+                                                contentDescription = "作品图",
+                                                modifier = Modifier.size(120.dp).clip(MaterialTheme.shapes.medium),
+                                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                            )
+                                            Spacer(Modifier.height(2.dp))
+                                            Text(nick, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                }
+                            }
+                            photoTip?.let {
+                                Spacer(Modifier.height(6.dp))
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            FilledTonalButton(
+                                onClick = {
+                                    if (Api.token == null) {
+                                        photoTip = "游客模式不能上传，请先登录"
+                                        return@FilledTonalButton
+                                    }
+                                    pickPhotoLauncher.launch(androidx.activity.result.PickVisualMediaRequest(
+                                        androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                },
+                                enabled = !uploadingPhoto,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text(if (uploadingPhoto) "上传中…" else "上传我的作品图（审核后展示）") }
+                        }
+                    }
+                }
                 if (recipe.intro.isNotEmpty()) {
                     item { Text(recipe.intro, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
@@ -520,4 +625,22 @@ fun CountDownDialog(minutes: Int, onDismiss: () -> Unit) {
             androidx.compose.material3.TextButton(onClick = onDismiss) { Text("关闭") }
         },
     )
+}
+
+@Composable
+private fun StatIcon(res: Int, value: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        androidx.compose.material3.Icon(
+            androidx.compose.ui.res.painterResource(res),
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(3.dp))
+        Text(
+            "$value",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }

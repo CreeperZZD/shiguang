@@ -47,6 +47,8 @@ fun MineScreen(
     onOpenFamily: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onOpenReport: () -> Unit = {},
+    onOpenShake: () -> Unit = {},
+    onLogin: () -> Unit = {},
 ) {
     var nickname by remember { mutableStateOf("") }
     var metrics by remember { mutableStateOf<List<Triple<String, String, String>>>(emptyList()) }
@@ -54,6 +56,11 @@ fun MineScreen(
     var err by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
+        if (Api.token == null) {
+            // 游客模式：跳过云端请求，显示本地收藏
+            favs = emptyList()
+            return@LaunchedEffect
+        }
         try {
             val me = Api.get("/me")
             Session.saveMeJson(me.toString())
@@ -88,6 +95,19 @@ fun MineScreen(
         item {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
+                    if (Api.token == null) {
+                        Text("游客模式", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "数据仅保存在本机；登录后可云同步、点赞收藏、记日记",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        androidx.compose.material3.Button(onClick = onLogin, modifier = Modifier.fillMaxWidth()) {
+                            Text("登录 / 注册")
+                        }
+                    } else {
                     Text(nickname.ifBlank { "食光用户" }, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
                     metrics.forEach { (title, value, sub) ->
@@ -114,10 +134,17 @@ fun MineScreen(
                         Text("家庭成员")
                     }
                     Spacer(Modifier.height(8.dp))
+                    OutlinedButton(onClick = onOpenShake, modifier = Modifier.fillMaxWidth()) {
+                        Icon(painterResource(R.drawable.ic_dice), contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(6.dp))
+                        Text("今天吃啥（摇一摇）")
+                    }
+                    Spacer(Modifier.height(8.dp))
                     OutlinedButton(onClick = onOpenReport, modifier = Modifier.fillMaxWidth()) {
                         Icon(painterResource(R.drawable.ic_report), contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(6.dp))
                         Text("一周热量报告")
+                    }
                     }
                 }
             }
