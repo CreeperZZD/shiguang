@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shiguang.app.R
 import com.shiguang.app.data.Api
+import com.shiguang.app.data.AppSettings
 import com.shiguang.app.data.Session
 import com.shiguang.app.data.flexRecipeList
 import com.shiguang.app.data.parseMe
@@ -49,6 +50,7 @@ fun MineScreen(
     onOpenReport: () -> Unit = {},
     onOpenShake: () -> Unit = {},
     onLogin: () -> Unit = {},
+    onOpenStreet: () -> Unit = {},
 ) {
     var nickname by remember { mutableStateOf("") }
     var metrics by remember { mutableStateOf<List<Triple<String, String, String>>>(emptyList()) }
@@ -124,6 +126,27 @@ fun MineScreen(
                         }
                     }
                     Spacer(Modifier.height(12.dp))
+                    val ctx = androidx.compose.ui.platform.LocalContext.current
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(painterResource(R.drawable.ic_dice), contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(10.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("学生 / 上班族干饭街", style = MaterialTheme.typography.bodyLarge)
+                                    Text("美食街单人餐推荐 · 转盘决定 · 外食记账", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                androidx.compose.material3.Switch(
+                                    checked = AppSettings.streetMode,
+                                    onCheckedChange = { AppSettings.setStreetMode(ctx, it) },
+                                )
+                            }
+                            if (AppSettings.streetMode) {
+                                TextButton(onClick = onOpenStreet, modifier = Modifier.fillMaxWidth()) { Text("进入干饭街 ›") }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
                     OutlinedButton(onClick = onEditProfile, modifier = Modifier.fillMaxWidth()) {
                         Text("编辑健康档案")
                     }

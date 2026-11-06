@@ -46,7 +46,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> Unit, onOpenDiary: () -> Unit = {}) {
+fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> Unit, onOpenDiary: () -> Unit = {}, onOpenStreet: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     var plan by remember { mutableStateOf<DailyPlan?>(null) }
     var err by remember { mutableStateOf<String?>(null) }
@@ -202,6 +202,29 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(top = 2.dp),
                         )
+                    }
+                    if (com.shiguang.app.data.AppSettings.streetMode) {
+                        Spacer(Modifier.height(6.dp))
+                        Card(
+                            Modifier.fillMaxWidth().clickable { onOpenStreet() },
+                            colors = androidx.compose.material3.CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            ),
+                        ) {
+                            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                androidx.compose.material3.Icon(
+                                    androidx.compose.ui.res.painterResource(com.shiguang.app.R.drawable.ic_tab_ingredients),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                                Spacer(Modifier.size(10.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("干饭街 · 学生/上班族", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                    Text("单人套餐推荐 · 转盘决定 · 外食记账", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text("进入 ›", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
                     }
                 }
                 if (showStructure) {

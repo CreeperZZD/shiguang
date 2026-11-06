@@ -184,6 +184,48 @@ CREATE INDEX IF NOT EXISTS idx_diary_user_date ON diary_entries(user_id, entry_d
   `);
 })();
 
+/* 增量迁移：干饭街（大学生/上班族模式）——美食街单人餐清单 + 外食打卡记账，幂等 */
+(function addStreetTables() {
+  db.exec(`
+  CREATE TABLE IF NOT EXISTS street_foods (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    price REAL NOT NULL,
+    kcal INTEGER NOT NULL,
+    spicy INTEGER NOT NULL DEFAULT 0,
+    slots TEXT NOT NULL DEFAULT 'lunch,dinner',
+    tags TEXT NOT NULL DEFAULT '',
+    intro TEXT NOT NULL DEFAULT ''
+  );
+  CREATE TABLE IF NOT EXISTS street_checkins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    food_name TEXT NOT NULL,
+    price REAL,
+    kcal INTEGER,
+    slot TEXT NOT NULL DEFAULT '',
+    entry_date TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_street_checkins_user ON street_checkins(user_id, entry_date);
+  `);
+  const row = db.prepare('SELECT COUNT(*) AS c FROM street_foods').get();
+  if (Number(row.c) === 0) {
+    const seed = JSON.parse(fs.readFileSync(path.join(__dirname, 'seed-street.json'), 'utf8'));
+    const ins = db.prepare('INSERT INTO street_foods (name, category, price, kcal, spicy, slots, tags, intro) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    db.exec('BEGIN');
+    try {
+      for (const s of seed) ins.run(s.name, s.category, s.price, s.kcal, s.spicy || 0, s.slots || 'lunch,dinner', s.tags || '', s.intro || '');
+      db.exec('COMMIT');
+      console.log('[db] 已导入干饭街菜单 ' + seed.length + ' 条');
+    } catch (e) {
+      db.exec('ROLLBACK');
+      throw e;
+    }
+  }
+})();
+
 /* 首启自动导入种子菜谱（仅当表为空） */
 (function seedIfEmpty() {
   const row = db.prepare('SELECT COUNT(*) AS c FROM recipes').get();

@@ -54,6 +54,7 @@ import com.shiguang.app.ui.SettingsScreen
 import com.shiguang.app.ui.PreferencesScreen
 import com.shiguang.app.ui.DiaryScreen
 import com.shiguang.app.ui.ShakeScreen
+import com.shiguang.app.ui.StreetScreen
 import com.shiguang.app.ui.SquareScreen
 import com.shiguang.app.ui.WeeklyReportScreen
 import com.shiguang.app.ui.MineScreen
@@ -127,7 +128,7 @@ fun App(onSetTheme: (String) -> Unit = {}) {
         }
     }
 
-    BackHandler(enabled = route.startsWith("detail:") || route == "edit" || route == "weekly" || route.startsWith("videos:") || route == "leaderboard" || route == "square" || route == "quantify" || route == "fridgescan" || route == "family" || route == "report" || route == "settings" || route == "prefs" || route == "diary" || route == "shake") {
+    BackHandler(enabled = route.startsWith("detail:") || route == "edit" || route == "weekly" || route.startsWith("videos:") || route == "leaderboard" || route == "square" || route == "quantify" || route == "fridgescan" || route == "family" || route == "report" || route == "settings" || route == "prefs" || route == "diary" || route == "shake" || route == "street") {
         route = when {
             route.startsWith("detail:") -> detailReturn
             route.startsWith("videos:") -> "detail:" + route.substringAfter("videos:")
@@ -222,6 +223,7 @@ fun App(onSetTheme: (String) -> Unit = {}) {
             onBack = { route = "main" },
             onOpenRecipe = { detailReturn = "main"; route = "detail:$it" },
         )
+        route == "street" -> StreetScreen(onBack = { route = "main" })
         route == "report" -> WeeklyReportScreen(
             target = Session.currentMemberTarget ?: parseMe(meJson ?: "")?.targetCalories?.toInt(),
             onBack = { route = "main" },
@@ -240,6 +242,7 @@ fun App(onSetTheme: (String) -> Unit = {}) {
             onOpenDiary = { route = "diary" },
             onOpenShake = { route = "shake" },
             onOpenLogin = { route = "login" },
+            onOpenStreet = { route = "street" },
             onEditProfile = { route = "edit" },
             onSetTheme = onSetTheme,
             onLogout = {
@@ -264,6 +267,7 @@ fun MainTabs(
     onOpenDiary: () -> Unit = {},
     onOpenShake: () -> Unit = {},
     onOpenLogin: () -> Unit = {},
+    onOpenStreet: () -> Unit = {},
     onEditProfile: () -> Unit,
     onSetTheme: (String) -> Unit = {},
     onLogout: () -> Unit,
@@ -317,6 +321,7 @@ fun MainTabs(
                     onOpenRecipe = onOpenRecipe,
                     onOpenWeekly = onOpenWeekly,
                     onOpenDiary = onOpenDiary,
+                    onOpenStreet = onOpenStreet,
                 )
                     1 -> IngredientsScreen(onOpenRecipe = onOpenRecipe, onOpenFridgeScan = onOpenFridgeScan)
                     2 -> RecipesScreen(
@@ -334,6 +339,7 @@ fun MainTabs(
                     onOpenSettings = onOpenSettings,
                     onOpenShake = onOpenShake,
                     onLogin = onOpenLogin,
+                    onOpenStreet = onOpenStreet,
                 )
                 }
             }

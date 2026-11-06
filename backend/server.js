@@ -1328,6 +1328,112 @@ route('DELETE', '/api/diary/(\\d+)', true, ({ res, user, m }) => {
   sendJSON(res, 200, { ok: true });
 });
 
+/* ---------------- 干饭街：大学生/上班族模式（美食街单人餐 + 转盘 + 打卡记账） ---------------- */
+
+const STREET_SELECT = 'SELECT * FROM street_foods';
+
+function streetOut(row) {
+  return {
+    id: row.id, name: row.name, category: row.category, price: row.price, kcal: row.kcal,
+    spicy: row.spicy, slots: String(row.slots || '').split(','), tags: String(row.tags || '').split(',').filter(Boolean),
+    intro: row.intro,
+  };
+}
+
+/* 通用过滤：时段 / 预算上限 / 辣度上限（spicy_max=4 表示无限制） */
+function streetPool(query) {
+  const slot = String(query.get('slot') || 'lunch');
+  const budget = Number(query.get('budget')) || 0;
+  const spicyMax = Number(query.get('spicy_max'));
+  let pool = db.prepare(STREET_SELECT).all().map(streetOut);
+  if (slot !== 'all') {
+    const filtered = pool.filter((f) => f.slots.includes(slot));
+    if (filtered.length >= 4) pool = filtered;
+  }
+  if (budget > 0) {
+    const filtered = pool.filter((f) => f.price <= budget);
+    if (filtered.length >= 4) pool = filtered;
+  }
+  if (Number.isFinite(spicyMax) && spicyMax < 4) {
+    const filtered = pool.filter((f) => f.spicy <= spicyMax);
+    if (filtered.length >= 4) pool = filtered;
+  }
+  return pool;
+}
+
+/* 今日推荐：按日期+时段确定性推荐 3 个（换一批用 reroll 种子） */
+route('GET', '/api/street/menu', false, ({ res, query }) => {
+  const pool = streetPool(query);
+  if (pool.length < 3) throw new HttpError(503, 'not_enough_foods', '过滤条件太严，放宽预算或辣度试试');
+  const date = (query.get('date') || localToday()).trim();
+  const reroll = (query.get('reroll') || '').trim();
+  const rng = rngFrom(`street|${date}|${query.get('slot')}|${query.get('budget')}|${query.get('spicy_max')}${reroll ? '|' + reroll : ''}`);
+  const picks = [];
+  const used = new Set();
+  for (let i = 0; i < 3 && used.size < pool.length; i++) {
+    let f = pool[Math.floor(rng() * pool.length)];
+    for (let k = 0; k < 12 && used.has(f.id); k++) f = pool[Math.floor(rng() * pool.length)];
+    if (used.has(f.id)) continue;
+    used.add(f.id);
+    picks.push(f);
+  }
+  sendJSON(res, 200, { ok: true, items: picks, pool_size: pool.length });
+});
+
+/* 转盘候选：n 个不重复（默认 6） */
+route('GET', '/api/street/wheel', false, ({ res, query }) => {
+  const pool = streetPool(query);
+  const n = Math.min(8, Math.max(3, Number(query.get('n')) || 6));
+  if (pool.length < n) throw new HttpError(503, 'not_enough_foods', '过滤条件太严，放宽预算或辣度试试');
+  const seed = (query.get('seed') || String(Date.now()));
+  const rng = rngFrom('wheel|' + seed);
+  const items = [];
+  const used = new Set();
+  for (let i = 0; i < n && used.size < pool.length; i++) {
+    let f = pool[Math.floor(rng() * pool.length)];
+    for (let k = 0; k < 12 && used.has(f.id); k++) f = pool[Math.floor(rng() * pool.length)];
+    if (used.has(f.id)) continue;
+    used.add(f.id);
+    items.push(f);
+  }
+  sendJSON(res, 200, { ok: true, items });
+});
+
+/* 打卡：吃了什么记一笔（登录用户） */
+route('POST', '/api/street/checkin', true, ({ res, user, body }) => {
+  const name = String(body.food_name || '').trim();
+  if (!name || name.length > 30) throw bad('food_name 必填且不超过 30 字');
+  const price = body.price == null || body.price === '' ? null : Number(body.price);
+  if (price != null && (!Number.isFinite(price) || price < 0 || price > 9999)) throw bad('price 需为 0-9999');
+  const kcal = body.kcal == null || body.kcal === '' ? null : Number(body.kcal);
+  if (kcal != null && (!Number.isFinite(kcal) || kcal < 0 || kcal > 20000)) throw bad('kcal 需为 0-20000');
+  const slot = ['breakfast', 'lunch', 'dinner', 'night'].includes(body.slot) ? body.slot : '';
+  const date = String(body.date || localToday()).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw bad('date 格式需为 YYYY-MM-DD');
+  const ret = db.prepare('INSERT INTO street_checkins (user_id, food_name, price, kcal, slot, entry_date) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(user.id, name, price, Math.round(kcal || 0), slot, date);
+  sendJSON(res, 200, { ok: true, id: Number(ret.lastInsertRowid) });
+});
+
+/* 外食小结：本月次数/花费/最常吃/最近记录 */
+route('GET', '/api/street/summary', true, ({ req, res, user, query }) => {
+  const month = (query.get('month') || localToday().slice(0, 7)).trim();
+  if (!/^\d{4}-\d{2}$/.test(month)) throw bad('month 格式需为 YYYY-MM');
+  const rows = db.prepare("SELECT food_name, price, entry_date FROM street_checkins WHERE user_id = ? AND entry_date LIKE ? ORDER BY id DESC").all(user.id, month + '-%');
+  const count = rows.length;
+  const totalPrice = rows.reduce((s, r) => s + (Number(r.price) || 0), 0);
+  const freq = new Map();
+  for (const r of rows) freq.set(r.food_name, (freq.get(r.food_name) || 0) + 1);
+  const favs = [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([name, times]) => ({ name, times }));
+  sendJSON(res, 200, {
+    ok: true, month, count,
+    total_price: round2(totalPrice),
+    avg_price: count ? round2(totalPrice / count) : 0,
+    favs,
+    recent: rows.slice(0, 8).map((r) => ({ name: r.food_name, price: r.price, date: r.entry_date })),
+  });
+});
+
 /* --- 用户上传菜谱制作流程图（先审后展：pending → 管理员 approve → 详情页可见） --- */
 const PHOTO_DIR = path.join(__dirname, 'photos');
 if (!fs.existsSync(PHOTO_DIR)) fs.mkdirSync(PHOTO_DIR, { recursive: true });
