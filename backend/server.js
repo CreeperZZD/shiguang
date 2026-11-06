@@ -1117,6 +1117,72 @@ route('PUT', '/api/me/preferences', true, ({ res, user, body }) => {
   sendJSON(res, 200, { ok: true, preferences: prefsFor(fresh) });
 });
 
+/* --- 三餐日记：只记录一日三餐吃了什么 --- */
+const MEAL_KEYS = ['breakfast', 'lunch', 'dinner'];
+const MEAL_LABELS = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐' };
+
+function diaryOut(row) {
+  return {
+    id: row.id, meal_key: row.meal_key, recipe_id: row.recipe_id || null,
+    recipe_name: row.recipe_name, kcal: row.kcal == null ? null : round2(row.kcal),
+    servings: row.servings == null ? null : row.servings, note: row.note || '',
+    created_at: row.created_at,
+  };
+}
+
+route('GET', '/api/diary', true, ({ req, res, query, user }) => {
+  const date = (query.get('date') || localToday()).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(new Date(date + 'T12:00:00').getTime())) {
+    throw bad('date 格式需为 YYYY-MM-DD');
+  }
+  const rows = db.prepare('SELECT * FROM diary_entries WHERE user_id = ? AND entry_date = ? ORDER BY id ASC').all(user.id, date);
+  const meals = { breakfast: [], lunch: [], dinner: [] };
+  let total = 0;
+  for (const r of rows) {
+    meals[r.meal_key] && meals[r.meal_key].push(diaryOut(r));
+    total += Number(r.kcal) || 0;
+  }
+  sendJSON(res, 200, { ok: true, date, meals, total_kcal: round2(total) });
+});
+
+route('POST', '/api/diary', true, ({ res, user, body }) => {
+  const date = String(body.date || localToday()).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(new Date(date + 'T12:00:00').getTime())) {
+    throw bad('date 格式需为 YYYY-MM-DD');
+  }
+  const mealKey = String(body.meal_key || '').trim();
+  if (!MEAL_KEYS.includes(mealKey)) throw bad('meal_key 需为 breakfast/lunch/dinner');
+  let name = String(body.recipe_name || '').trim();
+  let kcal = body.kcal == null || body.kcal === '' ? null : Number(body.kcal);
+  const servings = body.servings == null || body.servings === '' ? null : Number(body.servings);
+  if (servings != null && (!Number.isFinite(servings) || servings <= 0 || servings > 50)) throw bad('servings 需为 0-50');
+  let recipeId = null;
+  if (body.recipe_id != null) {
+    const row = db.prepare('SELECT * FROM recipes WHERE id = ?').get(Number(body.recipe_id));
+    if (!row) throw new HttpError(404, 'recipe_not_found');
+    recipeId = row.id;
+    if (!name) name = row.name;
+    if (kcal == null || !Number.isFinite(kcal)) {
+      // 记录实际摄入：单份热量 × 份量
+      kcal = row.kcal * (servings != null && servings > 0 ? servings : 1);
+    }
+  }
+  if (!name || name.length > 30) throw bad('菜名必填且不超过 30 字');
+  if (kcal != null && (!Number.isFinite(kcal) || kcal < 0 || kcal > 20000)) throw bad('kcal 需为 0-20000');
+  const note = String(body.note || '').trim().slice(0, 100);
+  const ret = db.prepare(
+    'INSERT INTO diary_entries (user_id, entry_date, meal_key, recipe_id, recipe_name, kcal, servings, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(user.id, date, mealKey, recipeId, name, kcal, servings, note);
+  const row = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(Number(ret.lastInsertRowid));
+  sendJSON(res, 200, { ok: true, entry: diaryOut(row) });
+});
+
+route('DELETE', '/api/diary/(\\d+)', true, ({ res, user, m }) => {
+  const ret = db.prepare('DELETE FROM diary_entries WHERE id = ? AND user_id = ?').run(Number(m[1]), user.id);
+  if (Number(ret.changes) === 0) throw new HttpError(404, 'entry_not_found');
+  sendJSON(res, 200, { ok: true });
+});
+
 /* --- 用户发布菜谱（AI 量化结果确认后入库，source='user'） --- */
 route('POST', '/api/recipes', true, ({ res, user, body }) => {
   const name = String(body.name || '').trim();

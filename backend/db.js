@@ -113,10 +113,23 @@ CREATE TABLE IF NOT EXISTS family_members (
   goal TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
+CREATE TABLE IF NOT EXISTS diary_entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  entry_date TEXT NOT NULL,
+  meal_key TEXT NOT NULL,
+  recipe_id INTEGER,
+  recipe_name TEXT NOT NULL,
+  kcal REAL,
+  servings REAL,
+  note TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_recipes_category ON recipes(category);
 CREATE INDEX IF NOT EXISTS idx_posts_city ON posts(city);
 CREATE INDEX IF NOT EXISTS idx_comments_post ON comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_diary_user_date ON diary_entries(user_id, entry_date);
 `);
 
 /* 增量迁移：recipes 表加 source 列（official=官方库 / user=用户分享），幂等 */

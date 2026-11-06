@@ -46,11 +46,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> Unit) {
+fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> Unit, onOpenDiary: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     var plan by remember { mutableStateOf<DailyPlan?>(null) }
     var err by remember { mutableStateOf<String?>(null) }
     var refreshing by remember { mutableStateOf(false) }
+    var logTip by remember { mutableStateOf<String?>(null) }
     var familyMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     // 几菜一汤结构：午/晚 1~4 道菜 + 汤开关
     var lunchN by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(1) }
@@ -116,6 +117,27 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                 err = e.message
             } finally {
                 refreshing = false
+            }
+        }
+    }
+
+    // 把某餐的每道菜记入三餐日记
+    fun logMealToDiary(m: com.shiguang.app.data.DailyMeal) {
+        scope.launch {
+            try {
+                val date = plan?.date
+                val dishes = m.dishes ?: listOf(com.shiguang.app.data.DishItem(m.recipe, m.servings, m.kcal, ""))
+                for (d in dishes) {
+                    val body = org.json.JSONObject()
+                    if (date != null && date.isNotBlank()) body.put("date", date)
+                    body.put("meal_key", m.key)
+                    body.put("recipe_id", d.recipe.id)
+                    if (d.servings != 1.0) body.put("servings", d.servings)
+                    Api.post("/diary", body)
+                }
+                logTip = "已记入${m.label}日记"
+            } catch (e: Exception) {
+                err = e.message
             }
         }
     }
@@ -235,6 +257,16 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                             "午 ${lunchN} 菜${if (withSoup) " 1 汤" else ""} · 晚 ${dinnerN} 菜${if (withSoup) " 1 汤" else ""}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onOpenDiary) { Text("三餐日记 ›") }
+                    }
+                    logTip?.let {
+                        Text(
+                            "✓ $it",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 2.dp),
                         )
                     }
                 }
@@ -325,7 +357,13 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                                     "${m.kcal} kcal",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.weight(1f),
                                 )
+                                TextButton(
+                                    onClick = { logMealToDiary(m) },
+                                    enabled = !refreshing,
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
+                                ) { Text("+日记") }
                             }
                             Spacer(Modifier.height(4.dp))
                             val dishList = m.dishes
