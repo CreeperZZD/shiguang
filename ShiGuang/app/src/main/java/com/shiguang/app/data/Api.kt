@@ -179,12 +179,20 @@ fun JSONObject.toRecipe(): Recipe {
     )
 }
 
-/** 读取 JSON 数组为字符串列表（缺失/类型不符返回空列表） */
+/** 警示字段兼容解析：服务端返回 {tag,label,reason} 对象数组，也兼容纯字符串数组 */
 private fun JSONObject.optStringArray(key: String): List<String> {
     val arr = optJSONArray(key) ?: return emptyList()
     val list = mutableListOf<String>()
-    for (i in 0 until arr.length()) list.add(arr.optString(i))
-    return list.filter { it.isNotEmpty() }
+    for (i in 0 until arr.length()) {
+        when (val v = arr.opt(i)) {
+            is String -> if (v.isNotEmpty()) list.add(v)
+            is JSONObject -> {
+                val s = v.optString("reason").ifEmpty { v.optString("label") }
+                if (s.isNotEmpty()) list.add(s)
+            }
+        }
+    }
+    return list
 }
 
 data class WeekDayPlan(
