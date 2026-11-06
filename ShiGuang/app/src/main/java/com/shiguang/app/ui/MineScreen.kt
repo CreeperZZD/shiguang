@@ -172,7 +172,7 @@ fun MineScreen(
             }
         }
         item {
-            Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) { Text("退出登录") }
+            Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) { Text(if (Api.token == null) "返回登录页" else "退出登录") }
         }
         err?.let {
             item { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }

@@ -167,7 +167,11 @@ fun App(onSetTheme: (String) -> Unit = {}) {
             Text("食光", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         }
         route == "login" -> LoginScreen(
-            onLoginDone = { complete -> Session.guest = false; route = if (complete) "main" else "profile" },
+            onLoginDone = { complete, json ->
+                Session.guest = false
+                if (json != null) { meJson = json; Session.saveMeJson(json) }
+                route = if (complete) "main" else "profile"
+            },
             onGuest = { Session.guest = true; route = "main" },
         )
         route == "profile" -> ProfileScreen(

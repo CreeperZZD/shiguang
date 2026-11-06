@@ -41,7 +41,7 @@ private val EMAIL_RE = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
 
 /** 登录/注册：手机号验证码（服务器测试模式）或邮箱验证码；也可「先逛逛」游客浏览 */
 @Composable
-fun LoginScreen(onLoginDone: (profileComplete: Boolean) -> Unit, onGuest: () -> Unit = {}) {
+fun LoginScreen(onLoginDone: (profileComplete: Boolean, meJson: String?) -> Unit, onGuest: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     var mode by rememberSaveable { mutableStateOf("phone") } // phone | email
     var phone by remember { mutableStateOf("") }
@@ -59,11 +59,11 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean) -> Unit, onGuest: () -> 
                 val me = Api.get("/me")
                 Session.saveMeJson(me.toString())
                 val complete = parseMe(me.toString())?.bmi != null
-                onLoginDone(complete)
+                onLoginDone(complete, me.toString())
             } catch (e: Exception) {
                 // 登录成功但拉档案失败：仍进入主界面（离线兜底）
                 Session.saveMeJson("")
-                onLoginDone(false)
+                onLoginDone(false, null)
             }
         }
     }
