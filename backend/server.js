@@ -186,6 +186,31 @@ function recipeOut(row, state) {
 function mealOut(row, servings, state) {
   return { recipe: recipeOut(row, state), servings, kcal: round2(row.kcal * servings) };
 }
+
+/* 结构化一餐输出：dishes 数组（含份量标签）；recipe/servings/kcal 取首菜保持旧客户端兼容 */
+function mealOutMulti(items, state) {
+  const dishes = items.map((it) => ({
+    recipe: recipeOut(it.r, state && state.get(it.r.id)),
+    servings: it.servings,
+    kcal: round2(it.r.kcal * it.servings),
+    serving_label: servingLabel(it.servings),
+  }));
+  const first = dishes[0];
+  return {
+    recipe: first.recipe,
+    servings: first.servings,
+    kcal: dishes.reduce((s, d) => s + d.kcal, 0),
+    dishes,
+  };
+}
+
+function parseMealCount(query, key) {
+  const raw = query.get(key);
+  if (raw === null) return 1;
+  const n = Math.round(Number(raw));
+  if (!Number.isFinite(n) || n < 1 || n > 4) throw bad(`${key} 需为 1-4 的整数`);
+  return n;
+}
 function loadAllRecipes() { return db.prepare('SELECT * FROM recipes ORDER BY id').all(); }
 
 /* 当前用户对若干菜谱的点赞/收藏状态（可选登录：无 token 返回空 map，字段为 false） */
@@ -202,57 +227,144 @@ function userStateMap(userId, recipeIds) {
   return map;
 }
 
-/* ---------------- 三餐/周排餐规划 ----------------
- * 按热量档分池：早餐取低档、午餐取中/高档、晚餐取中/低档；
- * 允许份量系数(1~3)使三餐总热量落在 target±15%；同日三道菜不重复；
- * 周计划对已用菜谱加权惩罚，使主菜尽量不重复；按日期做种子，同日结果确定。
+/* ---------------- 三餐/周排餐规划（结构化组合版） ----------------
+ * 午/晚餐支持「几菜一汤」（lunch_n/dinner_n 1~4 + soup 开关）：
+ *   - 荤素搭配：n≥2 时至少 1 荤 1 素；同类菜上限 2 道（不会端出 3 碗同汤）；
+ *   - 汤羹类（category=汤羹 或菜名以「汤」结尾）单独成汤位；
+ *   - 份量系数 0.5~3 按各菜配比自动配平，使三餐总热量落在 target±15%；
+ *   - serving_label：0.5=小份 / 1~1.5=中份 / ≥2=大份；
+ * 富余热量 ≥120 且 drinks=1 时，从饮品库（非菜谱，固定热量）配一杯饮品。
+ * 早/午/晚热量配比 25/40/35；同日三道菜不重复；周计划对已用菜谱加权惩罚；
+ * 按日期做种子，同日结果确定。
  */
-function pickDayPlan(recipes, target, rng, usedCount) {
+const SERVING_OPTIONS = [0.5, 1, 1, 1, 1.5, 1.5, 2, 2.5, 3]; // 重复元素=加权，偏中份
+function servingLabel(s) {
+  if (s <= 0.75) return '小份';
+  if (s <= 1.75) return '中份';
+  return '大份';
+}
+function servPenalty(s) {
+  return s === 0.5 ? 25 : s === 1 ? 0 : s === 1.5 ? 15 : s === 2 ? 40 : s === 2.5 ? 60 : 90;
+}
+function nearestServing(want) {
+  let best = SERVING_OPTIONS[0];
+  let diff = 1e9;
+  for (const s of SERVING_OPTIONS) {
+    const d = Math.abs(s - want);
+    if (d < diff) { diff = d; best = s; }
+  }
+  return best;
+}
+
+/* 饮品库：不在菜谱表内，仅用于补足富余热量 */
+const DRINKS = [
+  { name: '温牛奶', kcal: 140 }, { name: '无糖豆浆', kcal: 70 }, { name: '酸奶', kcal: 120 },
+  { name: '鲜榨橙汁', kcal: 110 }, { name: '柠檬水', kcal: 10 }, { name: '普洱茶', kcal: 5 },
+  { name: '酸梅汤', kcal: 90 }, { name: '绿豆汤', kcal: 80 }, { name: '冰红茶', kcal: 130 }, { name: '可乐', kcal: 150 },
+];
+function pickDrink(leftover, rng) {
+  // 在热量能补进富余空间的饮品里，取最接近 leftover*0.4 的前三杯随机挑一杯
+  const want = leftover * 0.4;
+  const cands = DRINKS.filter((d) => d.kcal <= leftover * 0.7)
+    .sort((a, b) => Math.abs(a.kcal - want) - Math.abs(b.kcal - want))
+    .slice(0, 3);
+  if (!cands.length) return null;
+  return cands[Math.floor(rng() * cands.length)];
+}
+
+function pickDayPlan(recipes, target, rng, usedCount, opts = {}) {
   const lo = target * 0.85;
   const hi = target * 1.15;
-  let bPool = recipes.filter((r) => r.calorie_tier === '低' || r.kcal <= 250);
-  let lPool = recipes.filter((r) => (r.calorie_tier === '中' || r.calorie_tier === '高') && r.kcal >= 250);
-  let dPool = recipes.filter((r) => (r.calorie_tier === '中' || r.calorie_tier === '低') && r.kcal <= 500);
-  if (bPool.length < 3) bPool = recipes.slice().sort((a, b) => a.kcal - b.kcal).slice(0, 6);
-  if (lPool.length < 3) lPool = recipes.slice().sort((a, b) => b.kcal - a.kcal).slice(0, 8);
-  if (dPool.length < 3) dPool = recipes.slice().sort((a, b) => a.kcal - b.kcal).slice(0, 8);
-  const SERVINGS = [1, 1, 1, 1.5, 1.5, 2, 2.5, 3]; // 重复元素=加权，偏向 1 份
-  const sp = (s) => (s === 1 ? 0 : s === 1.5 ? 20 : s === 2 ? 50 : 90);
-  const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+  const lunchN = Math.min(4, Math.max(1, Math.round(opts.lunchN || 1)));
+  const dinnerN = Math.min(4, Math.max(1, Math.round(opts.dinnerN || 1)));
+  const withSoup = opts.soup !== false;
+  const slotT = { b: target * 0.25, l: target * 0.40, d: target * 0.35 };
+  const isSoup = (r) => r.category === '汤羹' || /汤$/.test(r.name);
+  const soupPool = recipes.filter(isSoup);
+  const dishPool = recipes.filter((r) => !isSoup(r));
+  const meatPool = dishPool.filter((r) => r.meat_tag === '荤');
+  const vegPool = dishPool.filter((r) => r.meat_tag === '素');
+  let bPool = recipes.filter((r) => (r.calorie_tier === '低' || r.kcal <= 250) && !isSoup(r));
+  if (bPool.length < 3) bPool = dishPool.slice().sort((a, b) => a.kcal - b.kcal).slice(0, 6);
   const reuse = (r) => usedCount.get(r.id) || 0;
-  let best = null;
-  for (let i = 0; i < 500; i++) {
-    const b = pick(bPool); const l = pick(lPool); const d = pick(dPool);
-    if (b.id === l.id || l.id === d.id || b.id === d.id) continue;
-    for (const sb of SERVINGS) {
-      const cb = b.kcal * sb;
-      for (const sl of SERVINGS) {
-        const cl = l.kcal * sl;
-        for (const sd of SERVINGS) {
-          const total = cb + cl + d.kcal * sd;
-          if (total < lo || total > hi) continue;
-          const score = Math.abs(total - target) + (reuse(b) + reuse(l) + reuse(d)) * 400 + sp(sb) + sp(sl) + sp(sd);
-          if (!best || score < best.score) best = { b, l, d, sb, sl, sd, total, score };
-        }
+  const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+
+  /* 组一餐：n 道菜 +（可选）1 汤；荤素搭配、同类去重、避开 excludeIds */
+  function composeMeal(n, soup, excludeIds) {
+    const items = [];
+    const used = new Set(excludeIds || []);
+    const cats = new Map();
+    const tryPick = (pool) => {
+      for (let k = 0; k < 24; k++) {
+        const r = pool.length ? pick(pool) : null;
+        if (!r || used.has(r.id)) continue;
+        if ((cats.get(r.category) || 0) >= 2) continue; // 同一类最多 2 道
+        return r;
       }
+      return null;
+    };
+    if (soup && soupPool.length) {
+      const s = tryPick(soupPool);
+      if (s) { used.add(s.id); items.push({ r: s, share: 0.18 }); }
     }
+    const wantMeat = n >= 2 ? Math.max(1, Math.round(n / 2)) : (rng() < 0.5 ? 1 : 0);
+    for (let i = 0; i < n; i++) {
+      const pool = i < wantMeat ? meatPool : vegPool;
+      const r = tryPick(pool) || tryPick(dishPool);
+      if (!r) break;
+      used.add(r.id);
+      cats.set(r.category, (cats.get(r.category) || 0) + 1);
+      items.push({ r, share: 0.82 / n });
+    }
+    return items.length >= (soup && soupPool.length ? 2 : 1) ? items : null;
+  }
+
+  /* 按配比给固定一组菜分配份量档位，使这餐热量 ≈ slotT */
+  function assignServings(items, t) {
+    const denom = items.reduce((s, it) => s + it.r.kcal * it.share, 0);
+    const x = denom > 0 ? t / denom : 1;
+    return items.map((it) => ({ r: it.r, servings: nearestServing(x * it.share) }));
+  }
+  const mealKcal = (items) => items.reduce((s, it) => s + it.r.kcal * it.servings, 0);
+
+  let best = null;
+  for (let i = 0; i < 300; i++) {
+    const b = pick(bPool);
+    if (!b) continue;
+    const lRaw = composeMeal(lunchN, withSoup, [b.id]);
+    if (!lRaw) continue;
+    const dRaw = composeMeal(dinnerN, withSoup, [b.id, ...lRaw.map((x) => x.r.id)]);
+    if (!dRaw) continue;
+    const ls = assignServings(lRaw, slotT.l);
+    const ds = assignServings(dRaw, slotT.d);
+    const sb = nearestServing(slotT.b / Math.max(b.kcal, 1));
+    const ids = [b.id, ...ls.map((x) => x.r.id), ...ds.map((x) => x.r.id)];
+    if (new Set(ids).size !== ids.length) continue;
+    const total = b.kcal * sb + mealKcal(ls) + mealKcal(ds);
+    if (total < lo || total > hi) continue;
+    const dupPenalty = ids.reduce((s, id) => s + (usedCount.get(id) || 0), 0) * 400;
+    const score = Math.abs(total - target) + dupPenalty + servPenalty(sb) +
+      ls.concat(ds).reduce((s, it) => s + servPenalty(it.servings), 0);
+    if (!best || score < best.score) best = { b, sb, ls, ds, total, score };
   }
   if (!best) {
-    // 兜底：只取各池热量最高的前 8 道做有限组合（8³×SERVINGS，毫秒级；全量穷举在 150+ 道菜时会卡死）
+    // 兜底：各池取热量最高前 8 道做有限的单菜组合（毫秒级；全量穷举在 150+ 道菜时会卡死）
     const top = (arr, n) => arr.slice().sort((a, b) => b.kcal - a.kcal).slice(0, n);
     const bTop = top(bPool, 8);
-    const lTop = top(lPool, 8);
-    const dTop = top(dPool, 8);
+    const lTop = top(dishPool.length ? dishPool : recipes, 8);
+    const dTop = top(dishPool.length ? dishPool : recipes, 8);
     for (const b of bTop) {
       for (const l of lTop) {
         for (const d of dTop) {
           if (b.id === l.id || l.id === d.id || b.id === d.id) continue;
-          for (const sb of SERVINGS) {
-            for (const sl of SERVINGS) {
-              for (const sd of SERVINGS) {
+          for (const sb of SERVING_OPTIONS) {
+            for (const sl of SERVING_OPTIONS) {
+              for (const sd of SERVING_OPTIONS) {
                 const total = b.kcal * sb + l.kcal * sl + d.kcal * sd;
-                const score = Math.abs(total - target) + (reuse(b) + reuse(l) + reuse(d)) * 400 + sp(sb) + sp(sl) + sp(sd);
-                if (!best || score < best.score) best = { b, l, d, sb, sl, sd, total, score };
+                const score = Math.abs(total - target) + (reuse(b) + reuse(l) + reuse(d)) * 400 + servPenalty(sb) + servPenalty(sl) + servPenalty(sd);
+                if (!best || score < best.score) {
+                  best = { b, sb, ls: [{ r: l, servings: sl }], ds: [{ r: d, servings: sd }], total, score };
+                }
               }
             }
           }
@@ -692,22 +804,29 @@ route('GET', '/api/recipes/daily', false, ({ req, res, query }) => {
     }
   }
   const reroll = (query.get('seed') || '').trim(); // 换一换：客户端传随机 seed 即可重摇
+  const lunchN = parseMealCount(query, 'lunch_n');
+  const dinnerN = parseMealCount(query, 'dinner_n');
+  const withSoup = query.get('soup') !== '0';
+  const wantDrinks = query.get('drinks') !== '0';
   const prefs = prefsFor(getUserByToken(req));
   let recipes = loadAllRecipes().filter((r) => !hardExcluded(r, prefs));
   // 病理禁忌软排除：候选充足时优先过滤（池子太小则保留，详情页仍有警示）
   const safeRecipes = recipes.filter((r) => matchWarnings(r, prefs).length === 0);
   if (safeRecipes.length >= 30) recipes = safeRecipes;
   if (recipes.length < 3) throw new HttpError(503, 'not_enough_recipes', '菜谱库不足');
-  const plan = pickDayPlan(recipes, target, rngFrom(`daily|${date}|${target}${reroll ? '|' + reroll : ''}`), new Map());
+  const plan = pickDayPlan(recipes, target, rngFrom(`daily|${date}|${target}${reroll ? '|' + reroll : ''}`), new Map(), { lunchN, dinnerN, soup: withSoup });
+  const drink = wantDrinks && target - plan.total >= 120 ? pickDrink(target - plan.total, rngFrom(`drink|${date}|${target}${reroll ? '|' + reroll : ''}`)) : null;
   sendJSON(res, 200, {
     date, target, reroll: reroll || null, breakdown,
     range: { lo: round2(target * 0.85), hi: round2(target * 1.15) },
-    total_kcal: round2(plan.total),
+    total_kcal: round2(plan.total + (drink ? drink.kcal : 0)),
     within_range: plan.total >= target * 0.85 && plan.total <= target * 1.15,
+    structure: { lunch: `${lunchN} 菜${withSoup ? ' 1 汤' : ''}`, dinner: `${dinnerN} 菜${withSoup ? ' 1 汤' : ''}` },
+    drinks: drink ? [drink] : [],
     meals: {
-      breakfast: mealOut(plan.b, plan.sb),
-      lunch: mealOut(plan.l, plan.sl),
-      dinner: mealOut(plan.d, plan.sd),
+      breakfast: mealOutMulti([{ r: plan.b, servings: plan.sb }]),
+      lunch: mealOutMulti(plan.ls),
+      dinner: mealOutMulti(plan.ds),
     },
   });
 });
@@ -724,6 +843,10 @@ route('GET', '/api/recipes/weekly', false, ({ req, res, query }) => {
     }
   }
   const start = localToday();
+  const lunchN = parseMealCount(query, 'lunch_n');
+  const dinnerN = parseMealCount(query, 'dinner_n');
+  const withSoup = query.get('soup') !== '0';
+  const wantDrinks = query.get('drinks') !== '0';
   const prefs = prefsFor(getUserByToken(req));
   let recipes = loadAllRecipes().filter((r) => !hardExcluded(r, prefs));
   const safeRecipes = recipes.filter((r) => matchWarnings(r, prefs).length === 0);
@@ -733,16 +856,20 @@ route('GET', '/api/recipes/weekly', false, ({ req, res, query }) => {
   const days = [];
   for (let i = 0; i < 7; i++) {
     const date = addDays(start, i);
-    const plan = pickDayPlan(recipes, target, rngFrom(`weekly|${start}|${target}|${i}`), usedCount);
-    for (const r of [plan.b, plan.l, plan.d]) usedCount.set(r.id, (usedCount.get(r.id) || 0) + 1);
+    const plan = pickDayPlan(recipes, target, rngFrom(`weekly|${start}|${target}|${i}`), usedCount, { lunchN, dinnerN, soup: withSoup });
+    for (const it of [...plan.ls, ...plan.ds]) usedCount.set(it.r.id, (usedCount.get(it.r.id) || 0) + 1);
+    usedCount.set(plan.b.id, (usedCount.get(plan.b.id) || 0) + 1);
+    const drink = wantDrinks && target - plan.total >= 120 ? pickDrink(target - plan.total, rngFrom(`drink|${start}|${i}`)) : null;
     days.push({
       date, weekday: WEEKDAY_CN[new Date(date + 'T12:00:00').getDay()],
-      total_kcal: round2(plan.total),
+      total_kcal: round2(plan.total + (drink ? drink.kcal : 0)),
       within_range: plan.total >= target * 0.85 && plan.total <= target * 1.15,
+      structure: { lunch: `${lunchN} 菜${withSoup ? ' 1 汤' : ''}`, dinner: `${dinnerN} 菜${withSoup ? ' 1 汤' : ''}` },
+      drinks: drink ? [drink] : [],
       meals: {
-        breakfast: mealOut(plan.b, plan.sb),
-        lunch: mealOut(plan.l, plan.sl),
-        dinner: mealOut(plan.d, plan.sd),
+        breakfast: mealOutMulti([{ r: plan.b, servings: plan.sb }]),
+        lunch: mealOutMulti(plan.ls),
+        dinner: mealOutMulti(plan.ds),
       },
     });
   }

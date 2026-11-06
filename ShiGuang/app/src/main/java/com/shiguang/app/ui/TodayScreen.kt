@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +52,11 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
     var err by remember { mutableStateOf<String?>(null) }
     var refreshing by remember { mutableStateOf(false) }
     var familyMode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    // 几菜一汤结构：午/晚 1~4 道菜 + 汤开关
+    var lunchN by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(1) }
+    var dinnerN by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(1) }
+    var withSoup by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
+    var showStructure by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var showRoll by remember { mutableStateOf(false) }
     var rollDish by remember { mutableStateOf<com.shiguang.app.data.Recipe?>(null) }
     var rolling by remember { mutableStateOf(false) }
@@ -63,6 +69,9 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                     append("/recipes/daily?target=")
                     append(target ?: 2000)
                     if (familyMode) append("&family=1")
+                    append("&lunch_n=").append(lunchN)
+                    append("&dinner_n=").append(dinnerN)
+                    if (!withSoup) append("&soup=0")
                     if (rerollSeed != null) append("&seed=").append(rerollSeed)
                 }
                 plan = Api.get(q).toDailyPlan()
@@ -75,7 +84,7 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
         }
     }
 
-    LaunchedEffect(target, familyMode) { load(null) }
+    LaunchedEffect(target, familyMode, lunchN, dinnerN, withSoup) { load(null) }
 
     fun reroll() {
         val current = plan ?: return
@@ -89,10 +98,16 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                         append("/recipes/daily?target=")
                         append(target ?: 2000)
                         if (familyMode) append("&family=1")
+                        append("&lunch_n=").append(lunchN)
+                        append("&dinner_n=").append(dinnerN)
+                        if (!withSoup) append("&soup=0")
                         append("&seed=").append(seed)
                     }
                     val candidate = Api.get(q).toDailyPlan()
-                    val changed = candidate.meals.map { it.recipe.id } != current.meals.map { it.recipe.id }
+                    val ids = { plan2: com.shiguang.app.data.DailyPlan ->
+                        plan2.meals.flatMap { it.dishes?.map { d -> d.recipe.id } ?: listOf(it.recipe.id) }
+                    }
+                    val changed = ids(candidate) != ids(current)
                     if (changed || i == 5) { next = candidate; break }
                 }
                 plan = next ?: current
@@ -208,6 +223,50 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                             modifier = Modifier.padding(top = 2.dp),
                         )
                     }
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.FilterChip(
+                            selected = showStructure,
+                            onClick = { showStructure = !showStructure },
+                            label = { Text("几菜一汤") },
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            "午 ${lunchN} 菜${if (withSoup) " 1 汤" else ""} · 晚 ${dinnerN} 菜${if (withSoup) " 1 汤" else ""}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                if (showStructure) {
+                    item {
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(12.dp)) {
+                                listOf("午餐" to lunchN, "晚餐" to dinnerN).forEach { (label, cur) ->
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(44.dp))
+                                        listOf(1, 2, 3, 4).forEach { n ->
+                                            androidx.compose.material3.FilterChip(
+                                                selected = cur == n,
+                                                onClick = { if (label == "午餐") lunchN = n else dinnerN = n },
+                                                label = { Text(if (n == 1) "1 道" else "$n 道") },
+                                                modifier = Modifier.padding(end = 6.dp),
+                                            )
+                                        }
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("汤", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(44.dp))
+                                    androidx.compose.material3.FilterChip(
+                                        selected = withSoup,
+                                        onClick = { withSoup = !withSoup },
+                                        label = { Text("每餐配 1 汤") },
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
                 item {
                     Card(
@@ -257,28 +316,63 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                 }
                 items(p.meals.size) { i ->
                     val m = p.meals[i]
-                    Card(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenRecipe(m.recipe.id) },
-                    ) {
+                    Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 AssistChip(onClick = {}, label = { Text(m.label) })
                                 Spacer(Modifier.size(10.dp))
                                 Text(
-                                    m.recipe.name,
+                                    "${m.kcal} kcal",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.weight(1f),
                                 )
                             }
-                            Spacer(Modifier.height(6.dp))
-                            Text(
-                                "${m.kcal} kcal · ${m.recipe.minutes} 分钟 · ${"★".repeat(m.recipe.difficulty)}${"☆".repeat((3 - m.recipe.difficulty).coerceAtLeast(0))} · ${if (m.servings != 1.0) "${m.servings} 份" else "1 份"}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Spacer(Modifier.height(4.dp))
+                            val dishList = m.dishes
+                                ?: listOf(com.shiguang.app.data.DishItem(m.recipe, m.servings, m.kcal, if (m.servings <= 1.75) "中份" else "大份"))
+                            dishList.forEach { d ->
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onOpenRecipe(d.recipe.id) }
+                                        .padding(vertical = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(d.recipe.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                                        Text(
+                                            "${d.recipe.minutes} 分钟 · ${"★".repeat(d.recipe.difficulty)}${"☆".repeat((3 - d.recipe.difficulty).coerceAtLeast(0))}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    Text(
+                                        "${d.servingLabel} ${d.kcal} kcal",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                if (p.drinks.isNotEmpty()) {
+                    item {
+                        Card(Modifier.fillMaxWidth()) {
+                            Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                AssistChip(onClick = {}, label = { Text("饮品") })
+                                Spacer(Modifier.size(10.dp))
+                                Column(Modifier.weight(1f)) {
+                                    p.drinks.forEach { dr ->
+                                        Text("${dr.name} · ${dr.kcal} kcal", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                    Text(
+                                        "按富余热量配的一杯，饮品不在菜谱库中",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
                         }
                     }
                 }

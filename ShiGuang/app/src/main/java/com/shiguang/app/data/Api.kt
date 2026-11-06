@@ -201,7 +201,13 @@ data class WeekDayPlan(
     val totalKcal: Int,
     val withinRange: Boolean,
     val meals: List<DailyMeal>,
+    val drinks: List<DrinkItem> = emptyList(),
 )
+
+data class DrinkItem(val name: String, val kcal: Int)
+
+/** 结构化一餐里的单道菜（含份量标签） */
+data class DishItem(val recipe: Recipe, val servings: Double, val kcal: Int, val servingLabel: String)
 
 data class WeeklyPlan(val startDate: String, val target: Int, val days: List<WeekDayPlan>, val breakdown: List<TargetPart>? = null)
 
@@ -215,15 +221,7 @@ fun JSONObject.toWeeklyPlan(): WeeklyPlan {
         val labels = mapOf("breakfast" to "早餐", "lunch" to "午餐", "dinner" to "晚餐")
         for (key in listOf("breakfast", "lunch", "dinner")) {
             val o = m.optJSONObject(key) ?: continue
-            meals.add(
-                DailyMeal(
-                    key,
-                    labels[key] ?: key,
-                    o.getJSONObject("recipe").toRecipe(),
-                    o.optDouble("servings", 1.0),
-                    o.optInt("kcal"),
-                )
-            )
+            o.toDailyMeal(key, labels[key] ?: key)?.let { meals.add(it) }
         }
         days.add(
             WeekDayPlan(
@@ -232,13 +230,22 @@ fun JSONObject.toWeeklyPlan(): WeeklyPlan {
                 totalKcal = d.optInt("total_kcal"),
                 withinRange = d.optBoolean("within_range"),
                 meals = meals,
+                drinks = d.parseDrinks(),
             )
         )
     }
     return WeeklyPlan(startDate = optString("start_date"), target = optInt("target"), days = days, breakdown = parseBreakdown())
 }
 
-data class DailyMeal(val key: String, val label: String, val recipe: Recipe, val servings: Double, val kcal: Int)
+data class DailyMeal(
+    val key: String,
+    val label: String,
+    val recipe: Recipe,
+    val servings: Double,
+    val kcal: Int,
+    /** 结构化多道菜（几菜一汤）；null=旧版单菜 */
+    val dishes: List<DishItem>? = null,
+)
 
 data class TargetPart(val name: String, val target: Int)
 
@@ -259,7 +266,41 @@ data class DailyPlan(
     val withinRange: Boolean,
     val meals: List<DailyMeal>,
     val breakdown: List<TargetPart>? = null,
+    val drinks: List<DrinkItem> = emptyList(),
 )
+
+/** 解析一餐：优先 dishes 数组（结构化多道），缺失时退回单菜字段 */
+private fun JSONObject.toDailyMeal(key: String, label: String): DailyMeal? {
+    val dishesArr = optJSONArray("dishes")
+    if (dishesArr != null && dishesArr.length() > 0) {
+        val dishes = mutableListOf<DishItem>()
+        for (i in 0 until dishesArr.length()) {
+            val o = dishesArr.getJSONObject(i)
+            dishes.add(
+                DishItem(
+                    recipe = o.getJSONObject("recipe").toRecipe(),
+                    servings = o.optDouble("servings", 1.0),
+                    kcal = o.optInt("kcal"),
+                    servingLabel = o.optString("serving_label"),
+                )
+            )
+        }
+        val first = dishes[0]
+        return DailyMeal(key, label, first.recipe, first.servings, dishes.sumOf { it.kcal }, dishes)
+    }
+    val o = optJSONObject("recipe") ?: return null
+    return DailyMeal(key, label, o.toRecipe(), optDouble("servings", 1.0), optInt("kcal"), null)
+}
+
+private fun JSONObject.parseDrinks(): List<DrinkItem> {
+    val arr = optJSONArray("drinks") ?: return emptyList()
+    val list = mutableListOf<DrinkItem>()
+    for (i in 0 until arr.length()) {
+        val o = arr.getJSONObject(i)
+        list.add(DrinkItem(o.optString("name"), o.optInt("kcal")))
+    }
+    return list
+}
 
 fun JSONObject.toDailyPlan(): DailyPlan {
     val meals = mutableListOf<DailyMeal>()
@@ -267,15 +308,7 @@ fun JSONObject.toDailyPlan(): DailyPlan {
     val labels = mapOf("breakfast" to "早餐", "lunch" to "午餐", "dinner" to "晚餐")
     for (key in listOf("breakfast", "lunch", "dinner")) {
         val o = m.optJSONObject(key) ?: continue
-        meals.add(
-            DailyMeal(
-                key,
-                labels[key] ?: key,
-                o.getJSONObject("recipe").toRecipe(),
-                o.optDouble("servings", 1.0),
-                o.optInt("kcal"),
-            )
-        )
+        o.toDailyMeal(key, labels[key] ?: key)?.let { meals.add(it) }
     }
     return DailyPlan(
         date = optString("date"),
@@ -284,6 +317,7 @@ fun JSONObject.toDailyPlan(): DailyPlan {
         withinRange = optBoolean("within_range"),
         meals = meals,
         breakdown = parseBreakdown(),
+        drinks = parseDrinks(),
     )
 }
 

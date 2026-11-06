@@ -201,36 +201,66 @@ fun WeeklyPlanScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onBack: () -> U
                                 d.meals.forEach { m ->
                                     val key = "$i-${m.key}"
                                     val rep = replacements[key]
-                                    val shown = rep ?: m.recipe
-                                    val kcal = rep?.kcal ?: m.kcal
-                                    Row(
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .clickable { onOpenRecipe(shown.id) }
-                                            .padding(vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        AssistChip(onClick = {}, label = { Text(m.label) }, modifier = Modifier.padding(end = 10.dp))
-                                        Column(Modifier.weight(1f)) {
-                                            Text(shown.name, style = MaterialTheme.typography.bodyLarge)
-                                            Text(
-                                                if (rep != null) {
-                                                    "$kcal kcal · ${shown.minutes} 分钟 · 已手动换"
-                                                } else {
-                                                    "$kcal kcal · ${m.recipe.minutes} 分钟"
-                                                },
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = if (rep != null) {
-                                                    MaterialTheme.colorScheme.primary
-                                                } else {
-                                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                                },
-                                            )
+                                    val repKcal = rep?.kcal
+                                    val baseList = m.dishes
+                                        ?: listOf(com.shiguang.app.data.DishItem(m.recipe, m.servings, m.kcal, if (m.servings <= 1.75) "中份" else "大份"))
+                                    val dishList = if (rep != null) {
+                                        baseList.mapIndexed { idx, d2 ->
+                                            if (idx == 0) com.shiguang.app.data.DishItem(rep, m.servings, repKcal ?: d2.kcal, d2.servingLabel) else d2
                                         }
+                                    } else {
+                                        baseList
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        AssistChip(onClick = {}, label = { Text(m.label) }, modifier = Modifier.padding(end = 10.dp))
+                                        Text(
+                                            "共 ${dishList.sumOf { it.kcal }} kcal",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.weight(1f),
+                                        )
                                         TextButton(
                                             onClick = { openReplaceDialog(i, m) },
                                             contentPadding = PaddingValues(horizontal = 10.dp),
                                         ) { Text("换") }
+                                    }
+                                    dishList.forEachIndexed { idx, d2 ->
+                                        val replaced = rep != null && idx == 0
+                                        Row(
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .clickable { onOpenRecipe(d2.recipe.id) }
+                                                .padding(vertical = 6.dp, horizontal = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text(d2.recipe.name, style = MaterialTheme.typography.bodyLarge)
+                                                Text(
+                                                    "${d2.recipe.minutes} 分钟${if (replaced) " · 已手动换" else ""}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = if (replaced) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            }
+                                            Text(
+                                                "${d2.servingLabel} ${d2.kcal} kcal",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                }
+                                if (d.drinks.isNotEmpty()) {
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        AssistChip(onClick = {}, label = { Text("饮品") }, modifier = Modifier.padding(end = 10.dp))
+                                        Text(
+                                            d.drinks.joinToString("、") { "${it.name} ${it.kcal} kcal" },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.weight(1f),
+                                        )
                                     }
                                 }
                             }
