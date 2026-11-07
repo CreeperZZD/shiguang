@@ -243,9 +243,11 @@ fun MainTabs(
     onEditProfile: () -> Unit,
     onSetTheme: (String) -> Unit = {},
     onLogout: () -> Unit,
+    selectedTab: Int = 0,
+    onTabChange: (Int) -> Unit = {},
 ) {
     val tabs = remember { listOf(TabItem("今日", com.shiguang.app.R.drawable.ic_tab_home), TabItem("食材", com.shiguang.app.R.drawable.ic_tab_ingredients), TabItem("食谱", com.shiguang.app.R.drawable.ic_tab_recipes), TabItem("我的", com.shiguang.app.R.drawable.ic_tab_mine)) }
-    var selected by rememberSaveable { mutableIntStateOf(0) }
+    val selected = selectedTab
 
     Scaffold(
         bottomBar = {
@@ -261,7 +263,7 @@ fun MainTabs(
                     )
                     NavigationBarItem(
                         selected = selected == index,
-                        onClick = { selected = index },
+                        onClick = { onTabChange(index) },
                         icon = {
                             Icon(
                                 androidx.compose.ui.res.painterResource(tab.iconRes),
