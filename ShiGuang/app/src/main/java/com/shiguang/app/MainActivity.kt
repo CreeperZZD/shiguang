@@ -99,6 +99,7 @@ fun App(onSetTheme: (String) -> Unit = {}) {
     var meJson by rememberSaveable { mutableStateOf<String?>(null) }
     // 详情页返回时应回到的来源（main / weekly）
     var detailReturn by rememberSaveable { mutableStateOf("main") }
+    var mainTab by rememberSaveable { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
         if (Session.token == null) {
@@ -184,7 +185,7 @@ fun App(onSetTheme: (String) -> Unit = {}) {
             onPublished = { route = "main" },
         )
         route == "fridgescan" -> FridgeScanScreen(
-            onDone = { added -> route = "main" },
+            onDone = { added -> mainTab = 1; route = "main" },
             onBack = { route = "main" },
         )
         route == "family" -> FamilyScreen(onBack = { route = "main" })
@@ -215,6 +216,8 @@ fun App(onSetTheme: (String) -> Unit = {}) {
             onOpenShake = { route = "shake" },
             onOpenLogin = { route = "login" },
             onOpenStreet = { route = "street" },
+            selectedTab = mainTab,
+            onTabChange = { mainTab = it },
             onEditProfile = { route = "edit" },
             onSetTheme = onSetTheme,
             onLogout = {
