@@ -244,9 +244,10 @@ function coverSet() {
   catch { _coverSet = new Set(); }
   return _coverSet;
 }
+const COVER_VERSION = '2'; // 封面清理后版本号+1，客户端 URL 变化以破除图片缓存
 function coverFor(id) {
   const f = `recipe-${id}.jpg`;
-  return coverSet().has(f) ? `/covers/${f}` : null;
+  return coverSet().has(f) ? `/covers/${f}?v=${COVER_VERSION}` : null;
 }
 
 function recipeOut(row, state) {
