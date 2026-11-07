@@ -43,10 +43,11 @@ private val EMAIL_RE = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
 @Composable
 fun LoginScreen(onLoginDone: (profileComplete: Boolean, meJson: String?) -> Unit, onGuest: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
-    var mode by rememberSaveable { mutableStateOf("phone") } // phone | email
+    var mode by rememberSaveable { mutableStateOf("phone") } // phone | email | password
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf<String?>(null) }
     var msgGood by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
@@ -91,18 +92,21 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean, meJson: String?) -> Unit
             Text("好好吃饭的时光", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(24.dp))
 
-            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
                 OutlinedButton(onClick = { mode = "phone"; msg = null }) {
-                    Text(if (mode == "phone") "手机号登录 ✓" else "手机号登录")
+                    Text(if (mode == "phone") "验证码 ✓" else "验证码", style = MaterialTheme.typography.labelLarge)
                 }
                 OutlinedButton(onClick = { mode = "email"; msg = null }) {
-                    Text(if (mode == "email") "邮箱登录 ✓" else "邮箱登录")
+                    Text(if (mode == "email") "邮箱 ✓" else "邮箱", style = MaterialTheme.typography.labelLarge)
+                }
+                OutlinedButton(onClick = { mode = "password"; msg = null }) {
+                    Text(if (mode == "password") "密码 ✓" else "密码", style = MaterialTheme.typography.labelLarge)
                 }
             }
             Spacer(Modifier.height(16.dp))
 
-            if (mode == "phone") {
-                OutlinedTextField(
+            when (mode) {
+                "phone" -> OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it.filter { c -> c.isDigit() }.take(11) },
                     label = { Text("手机号") },
@@ -110,8 +114,7 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean, meJson: String?) -> Unit
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-            } else {
-                OutlinedTextField(
+                "email" -> OutlinedTextField(
                     value = email,
                     onValueChange = { email = it.trim() },
                     label = { Text("邮箱") },
@@ -119,8 +122,29 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean, meJson: String?) -> Unit
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                else -> OutlinedTextField(
+                    value = if (phone.isNotEmpty()) phone else email,
+                    onValueChange = { v ->
+                        if (v.isEmpty()) { phone = ""; email = "" }
+                        else if (v.all { c -> c.isDigit() } && v.length <= 11) phone = v
+                        else email = v.trim()
+                    },
+                    label = { Text("手机号或邮箱") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
             Spacer(Modifier.height(12.dp))
+            if (mode == "password") {
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("密码") },
+                    singleLine = true,
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = code,
@@ -162,16 +186,20 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean, meJson: String?) -> Unit
                     modifier = Modifier.padding(start = 8.dp),
                 ) { Text("获取验证码") }
             }
+            }
             Spacer(Modifier.height(20.dp))
             Button(
                 onClick = {
                     scope.launch {
                         msg = null; busy = true
                         try {
-                            val r = if (mode == "phone") {
-                                Api.post("/auth/login", JSONObject().put("phone", phone).put("code", code), auth = false)
-                            } else {
-                                Api.post("/auth/email-login", JSONObject().put("email", email).put("code", code), auth = false)
+                            val r = when (mode) {
+                                "phone" -> Api.post("/auth/login", JSONObject().put("phone", phone).put("code", code), auth = false)
+                                "email" -> Api.post("/auth/email-login", JSONObject().put("email", email).put("code", code), auth = false)
+                                else -> {
+                                    val acc = if (phone.isNotEmpty()) phone else email
+                                    Api.post("/auth/password-login", JSONObject().put("account", acc).put("password", password), auth = false)
+                                }
                             }
                             done(r.getString("token"))
                         } catch (e: Exception) {
@@ -181,7 +209,7 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean, meJson: String?) -> Unit
                         }
                     }
                 },
-                enabled = !busy && code.isNotEmpty() && (if (mode == "phone") phone.isNotEmpty() else email.isNotEmpty()),
+                enabled = !busy && (if (mode == "password") password.isNotEmpty() else code.isNotEmpty()) && (if (mode == "phone") phone.isNotEmpty() else if (mode == "email") email.isNotEmpty() else (phone.isNotEmpty() || email.isNotEmpty())),
                 modifier = Modifier.fillMaxWidth().height(54.dp),
             ) {
                 Text(if (busy) "登录中…" else "登录 / 注册", style = MaterialTheme.typography.titleMedium)

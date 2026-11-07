@@ -376,6 +376,21 @@ fun StreetScreen(onBack: () -> Unit) {
                 wheelOpen = false
                 checkin(f)
             },
+            onRefresh = {
+                scope.launch {
+                    try {
+                        val d = Api.get("/street/wheel?slot=$slot&budget=$budget&spicy_max=$spicyMax&n=6&seed=" + System.currentTimeMillis(), auth = false)
+                        val arr = d.optJSONArray("items") ?: JSONArray()
+                        wheelItems = (0 until arr.length()).map { i ->
+                            val o = arr.getJSONObject(i)
+                            StreetFood(o.getLong("id"), o.getString("name"), o.optString("category"), o.optDouble("price"), o.optInt("kcal"), o.optInt("spicy"), o.optString("intro"))
+                        }
+                        wheelErr = null
+                    } catch (e: Exception) {
+                        wheelErr = e.message
+                    }
+                }
+            },
         )
     }
 
@@ -398,13 +413,18 @@ private val WHEEL_COLORS = listOf(
 
 /** 转盘弹窗：Canvas 扇区 + 减速旋转动画 + 结果结算 */
 @Composable
-private fun WheelDialog(items: List<StreetFood>, onDismiss: () -> Unit, onPick: (StreetFood) -> Unit) {
+private fun WheelDialog(items: List<StreetFood>, onDismiss: () -> Unit, onPick: (StreetFood) -> Unit, onRefresh: () -> Unit = {}) {
     val seg = 360f / items.size
     val rotation = remember { Animatable(0f) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var spinning by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<StreetFood?>(null) }
     val textMeasurer = rememberTextMeasurer()
+
+    LaunchedEffect(items) {
+        rotation.snapTo(0f)
+        result = null
+    }
 
     fun spin() {
         if (spinning) return
@@ -455,16 +475,31 @@ private fun WheelDialog(items: List<StreetFood>, onDismiss: () -> Unit, onPick: 
                                     topLeft = Offset(c.x - r, c.y - r),
                                     size = androidx.compose.ui.geometry.Size(r * 2, r * 2),
                                 )
+                                if (result === f) {
+                                    drawArc(
+                                        color = Color.White.copy(alpha = 0.9f),
+                                        startAngle = start,
+                                        sweepAngle = seg,
+                                        useCenter = false,
+                                        topLeft = Offset(c.x - r, c.y - r),
+                                        size = androidx.compose.ui.geometry.Size(r * 2, r * 2),
+                                        style = Stroke(width = 4.dp.toPx()),
+                                    )
+                                }
                             }
                             items.forEachIndexed { i, f ->
                                 // 文字位置随盘旋转（纯三角函数，位置绝对精确），但文字本身保持水平，永远可读
                                 val angRad = Math.toRadians(((i * seg + seg / 2f + rotation.value) % 360f).toDouble())
-                                val dist = r - 18.dp.toPx()
+                                val dist = r - 30.dp.toPx()
                                 val px = c.x + (dist * sin(angRad)).toFloat()
                                 val py = c.y - (dist * cos(angRad)).toFloat()
                                 val layout = textMeasurer.measure(
                                     f.name.take(6),
-                                    style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF3A2A24)),
+                                    style = TextStyle(
+                                        fontSize = if (result === f) 14.sp else 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF3A2A24),
+                                    ),
                                 )
                                 drawText(layout, topLeft = Offset(px - layout.size.width / 2f, py - layout.size.height / 2f))
                             }
@@ -517,11 +552,16 @@ private fun WheelDialog(items: List<StreetFood>, onDismiss: () -> Unit, onPick: 
             }
         },
         dismissButton = {
-            TextButton(onClick = { if (!spinning) { if (result != null) { result = null; spin() } else onDismiss() } }) {
-                Text(
-                    if (result != null) "再转一次" else "关闭",
-                    color = if (result != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Row {
+                if (result == null && !spinning) {
+                    TextButton(onClick = onRefresh) { Text("换一批") }
+                }
+                TextButton(onClick = { if (!spinning) { if (result != null) { result = null; spin() } else onDismiss() } }) {
+                    Text(
+                        if (result != null) "再转一次" else "关闭",
+                        color = if (result != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         },
     )

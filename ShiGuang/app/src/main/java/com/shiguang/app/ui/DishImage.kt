@@ -16,24 +16,17 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.shiguang.app.data.Api
 import com.shiguang.app.data.AppSettings
-import java.net.URLEncoder
-import kotlin.math.abs
 
 private val PlaceholderColor = Color(0xFFF3E7DE)
 
-/** pollinations AI 生成图兜底（免费可商用，菜名做种子稳定出图） */
-fun dishImageUrl(name: String, width: Int = 512, height: Int = 384): String {
-    val prompt = URLEncoder.encode("$name 中国家常菜成品 美食摄影 暖色调 俯拍", "UTF-8")
-    return "https://image.pollinations.ai/prompt/$prompt?width=$width&height=$height&nologo=true&seed=${abs(name.hashCode()) % 100000}"
-}
-
 /**
- * 菜品配图：优先服务器真实照片（Wikimedia 免费可商用），没有则 AI 生成图兜底。
- * 省流模式：不加载图片，显示占位底色 + 菜名首字。
+ * 菜品配图：只使用服务器真实照片（Wikimedia 等真实来源），无图时显示干净的占位底色 + 菜名首字。
+ * 不使用 AI 生成图。
+ * 省流模式：不加载图片，直接显示占位。
  */
 @Composable
 fun DishImage(name: String, coverUrl: String? = null, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Crop) {
-    if (AppSettings.dataSaver) {
+    if (AppSettings.dataSaver || coverUrl.isNullOrBlank()) {
         Box(
             modifier = modifier.background(PlaceholderColor),
             contentAlignment = Alignment.Center,
@@ -46,10 +39,9 @@ fun DishImage(name: String, coverUrl: String? = null, modifier: Modifier = Modif
         }
         return
     }
-    val model = if (!coverUrl.isNullOrBlank()) Api.HOST + coverUrl else dishImageUrl(name)
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
-            .data(model)
+            .data(Api.HOST + coverUrl)
             .crossfade(220)
             .build(),
         contentDescription = name,

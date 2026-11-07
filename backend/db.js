@@ -150,6 +150,12 @@ CREATE INDEX IF NOT EXISTS idx_diary_user_date ON diary_entries(user_id, entry_d
   catch (e) { if (!/duplicate column/i.test(String(e && e.message))) throw e; }
 })();
 
+/* 增量迁移：users 表加 password_hash 列（账号密码登录，scrypt salt:hex），幂等 */
+(function addPasswordColumn() {
+  try { db.exec(`ALTER TABLE users ADD COLUMN password_hash TEXT`); }
+  catch (e) { if (!/duplicate column/i.test(String(e && e.message))) throw e; }
+})();
+
 /* 增量迁移：users 表加 email 列（邮箱注册，选填唯一），幂等 */
 (function addEmailColumn() {
   try { db.exec(`ALTER TABLE users ADD COLUMN email TEXT`); }

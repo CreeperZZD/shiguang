@@ -39,7 +39,12 @@ import androidx.compose.ui.unit.dp
 import com.shiguang.app.R
 import com.shiguang.app.data.AppSettings
 import com.shiguang.app.data.Session
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 
@@ -53,6 +58,9 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPrefs: () -> Unit = {}) {
     var aiKey by remember { mutableStateOf(Session.aiApiKey ?: "") }
     var aiModel by remember { mutableStateOf(Session.aiModel ?: "") }
     var aiSaved by remember { mutableStateOf(false) }
+    var aiTest by remember { mutableStateOf<String?>(null) }
+    var aiTesting by remember { mutableStateOf(false) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     fun openAppDetails() {
         runCatching {
@@ -156,7 +164,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPrefs: () -> Unit = {}) {
             Text("AI 识别接口", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
             Text(
-                "拍冰箱识食材默认使用官方服务器（需登录）。有自己 API 的用户可在此接入（OpenAI 兼容的视觉接口，Key 只保存在本机）：",
+                "拍冰箱识食材需要「支持图片输入」的视觉模型（如 qwen-vl-max、gpt-4o-mini）；DeepSeek 的 deepseek-chat/reasoner 是纯文本模型，接进来也无法识别图片。BASE URL 填到 /v1 为止，Key 只保存在本机：",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -182,7 +190,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPrefs: () -> Unit = {}) {
             OutlinedTextField(
                 value = aiModel,
                 onValueChange = { aiModel = it.trim(); aiSaved = false },
-                label = { Text("模型名，如 qwen-vl-max / gpt-4o-mini") },
+                label = { Text("模型名（需视觉模型，如 qwen-vl-max / gpt-4o-mini）") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = MaterialTheme.typography.bodySmall,
@@ -196,11 +204,60 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPrefs: () -> Unit = {}) {
                     aiSaved = true
                 }) { Text(if (aiSaved) "已保存 ✓" else "保存") }
                 Spacer(Modifier.width(10.dp))
+                OutlinedButton(onClick = {
+                    val base = aiBase.trimEnd('/')
+                    val key = aiKey.trim()
+                    if (base.isBlank() || key.isBlank() || aiModel.isBlank()) {
+                        aiTest = "请先填全 BASE URL / API Key / 模型名"
+                        return@OutlinedButton
+                    }
+                    aiTesting = true
+                    aiTest = null
+                    scope.launch {
+                        aiTest = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            try {
+                                val body = org.json.JSONObject()
+                                    .put("model", aiModel.trim())
+                                    .put("messages", org.json.JSONArray().put(org.json.JSONObject().put("role", "user").put("content", "回复两个字：成功")))
+                                    .put("max_tokens", 16)
+                                val req = okhttp3.Request.Builder()
+                                    .url(base + "/chat/completions")
+                                    .header("Authorization", "Bearer " + key)
+                                    .post(body.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull()))
+                                    .build()
+                                val client = okhttp3.OkHttpClient.Builder()
+                                    .connectTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
+                                    .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                                    .build()
+                                client.newCall(req).execute().use { resp ->
+                                    val text = resp.body?.string() ?: ""
+                                    if (!resp.isSuccessful) "连接失败 HTTP ${resp.code}：${text.take(120)}"
+                                    else {
+                                        val content = org.json.JSONObject(text).optJSONArray("choices")?.optJSONObject(0)
+                                            ?.optJSONObject("message")?.optString("content") ?: ""
+                                        "连接成功 ✓ 模型回复：${content.take(30).ifBlank { "(空)" }}"
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                "连接失败：${e.message ?: e.javaClass.simpleName}"
+                            }
+                        }
+                    }
+                }, enabled = !aiTesting) { Text(if (aiTesting) "测试中…" else "测试连接") }
+                Spacer(Modifier.width(10.dp))
                 TextButton(onClick = {
                     aiBase = ""; aiKey = ""; aiModel = ""
                     Session.aiBaseUrl = null; Session.aiApiKey = null; Session.aiModel = null
-                    aiSaved = false
+                    aiSaved = false; aiTest = null
                 }) { Text("恢复使用官方服务") }
+            }
+            aiTest?.let {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (it.startsWith("连接成功")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                )
             }
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))

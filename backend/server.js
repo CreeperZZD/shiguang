@@ -796,6 +796,39 @@ route('POST', '/api/auth/login', false, ({ req, res, body }) => {
   sendJSON(res, 200, { ok: true, token: issueToken(user), user: publicUser(user) });
 });
 
+/* --- 账号密码登录：account 可为手机号或邮箱；密码经 scrypt 加盐存储 --- */
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return salt + ':' + hash;
+}
+function verifyPassword(password, stored) {
+  const [salt, hash] = String(stored || '').split(':');
+  if (!salt || !hash) return false;
+  const calc = crypto.scryptSync(password, salt, 64).toString('hex');
+  return crypto.timingSafeEqual(Buffer.from(calc, 'hex'), Buffer.from(hash, 'hex'));
+}
+
+route('POST', '/api/auth/password-login', false, ({ req, res, body }) => {
+  if (!rateLimit('pl:' + clientIp(req), 10, 60 * 60 * 1000)) throw new HttpError(429, 'rate_limited', '尝试过于频繁，请稍后再试');
+  const account = String(body.account || '').trim().toLowerCase();
+  const password = String(body.password || '');
+  if (!account || !password) throw bad('account 与 password 必填');
+  const user = db.prepare('SELECT * FROM users WHERE phone = ? OR email = ?').get(account, account);
+  if (!user || !user.password_hash || !verifyPassword(password, user.password_hash)) {
+    throw new HttpError(401, 'invalid_credentials', '账号或密码错误');
+  }
+  sendJSON(res, 200, { ok: true, token: issueToken(user), user: publicUser(user) });
+});
+
+/* 设置/修改密码（需已登录） */
+route('PUT', '/api/me/password', true, ({ res, user, body }) => {
+  const password = String(body.password || '');
+  if (password.length < 6 || password.length > 64) throw bad('密码需为 6-64 位');
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(password), user.id);
+  sendJSON(res, 200, { ok: true });
+});
+
 /* --- 邮箱验证码注册/登录（需服务器配置 secrets/smtp.json，未配置则返回 email_disabled） --- */
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
@@ -1474,12 +1507,15 @@ route('GET', '/api/photos/(\\d+)', false, ({ req, res, m }) => {
 });
 
 /* --- 管理端：审核流程图 + 统计（X-Admin-Token 鉴权，密钥在 secrets/admin.json） --- */
-let _adminToken = null;
+let _adminCfg = null;
+function adminConfig() {
+  if (_adminCfg !== null) return _adminCfg;
+  try { _adminCfg = JSON.parse(fs.readFileSync(path.join(SECRETS_DIR, 'admin.json'), 'utf8')) || {}; }
+  catch { _adminCfg = {}; }
+  return _adminCfg;
+}
 function adminToken() {
-  if (_adminToken !== null) return _adminToken;
-  try { _adminToken = String(JSON.parse(fs.readFileSync(path.join(SECRETS_DIR, 'admin.json'), 'utf8')).token || ''); }
-  catch { _adminToken = ''; }
-  return _adminToken;
+  return String(adminConfig().token || '');
 }
 function requireAdmin(req) {
   const t = String(req.headers['x-admin-token'] || '');
@@ -1843,7 +1879,17 @@ route('GET', '/api/posts/(\\d+)/comments', false, ({ res, m }) => {
 });
 
 /* --- AI：文本菜谱结构化（真实调用 LLM，推理模型：答案在 content） --- */
-route('POST', '/api/ai/quantify-recipe', true, async ({ req, res, body }) => {
+/* 云端 AI 仅限管理员账号（secrets/admin.json 配 phone 才启用门禁，未配则所有登录用户可用） */
+function requireCloudAi(user) {
+  const phone = adminConfig().phone;
+  if (!phone) return;
+  if (!user || String(user.phone) !== String(phone)) {
+    throw new HttpError(403, 'cloud_ai_admin_only', '云端 AI 仅限管理员账号使用；其他用户请在「设置 → AI 识别接口」接入自己的 API');
+  }
+}
+
+route('POST', '/api/ai/quantify-recipe', true, async ({ req, res, user, body }) => {
+  requireCloudAi(user);
   if (!rateLimit('ai:' + clientIp(req), 6, 60 * 1000)) throw new HttpError(429, 'rate_limited', 'AI 调用过于频繁（每分钟 6 次）');
   const text = typeof body.text === 'string' ? body.text.trim() : '';
   if (!text || text.length > 4000) throw bad('text 必填且不超过 4000 字');
@@ -1864,7 +1910,8 @@ route('POST', '/api/ai/quantify-recipe', true, async ({ req, res, body }) => {
 });
 
 /* --- AI：拍冰箱识别食材（支持多图合并识别，最多 4 张） --- */
-route('POST', '/api/ai/recognize-ingredients', true, async ({ req, res, body }) => {
+route('POST', '/api/ai/recognize-ingredients', true, async ({ req, res, user, body }) => {
+  requireCloudAi(user);
   if (!rateLimit('ai:' + clientIp(req), 6, 60 * 1000)) throw new HttpError(429, 'rate_limited', 'AI 调用过于频繁（每分钟 6 次）');
   const images = [];
   const pushB64 = (raw) => {
