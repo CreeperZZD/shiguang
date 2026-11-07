@@ -162,9 +162,14 @@ fun StreetScreen(onBack: () -> Unit) {
             try {
                 val d = Api.get("/street/wheel?slot=$slot&budget=$budget&spicy_max=$spicyMax&n=6", auth = false)
                 val arr = d.optJSONArray("items") ?: JSONArray()
-                wheelItems = (0 until arr.length()).map { i ->
+                val list = (0 until arr.length()).map { i ->
                     val o = arr.getJSONObject(i)
                     StreetFood(o.getLong("id"), o.getString("name"), o.optString("category"), o.optDouble("price"), o.optInt("kcal"), o.optInt("spicy"), o.optString("intro"))
+                }
+                // 随机定赢家并排到指针正下方（items[0]），转盘动画只转整数圈，结果与画面必然一致
+                wheelItems = if (list.isEmpty()) list else {
+                    val winner = list.random()
+                    listOf(winner) + list.filter { it != winner }.shuffled()
                 }
                 wheelOpen = true
             } catch (e: Exception) {
@@ -376,21 +381,7 @@ fun StreetScreen(onBack: () -> Unit) {
                 wheelOpen = false
                 checkin(f)
             },
-            onRefresh = {
-                scope.launch {
-                    try {
-                        val d = Api.get("/street/wheel?slot=$slot&budget=$budget&spicy_max=$spicyMax&n=6&seed=" + System.currentTimeMillis(), auth = false)
-                        val arr = d.optJSONArray("items") ?: JSONArray()
-                        wheelItems = (0 until arr.length()).map { i ->
-                            val o = arr.getJSONObject(i)
-                            StreetFood(o.getLong("id"), o.getString("name"), o.optString("category"), o.optDouble("price"), o.optInt("kcal"), o.optInt("spicy"), o.optString("intro"))
-                        }
-                        wheelErr = null
-                    } catch (e: Exception) {
-                        wheelErr = e.message
-                    }
-                }
-            },
+            onRefresh = { openWheel() },
         )
     }
 
@@ -420,32 +411,23 @@ private fun WheelDialog(items: List<StreetFood>, onDismiss: () -> Unit, onPick: 
     var spinning by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<StreetFood?>(null) }
     val textMeasurer = rememberTextMeasurer()
-
     LaunchedEffect(items) {
         rotation.snapTo(0f)
         result = null
     }
 
     fun spin() {
-        if (spinning) return
+        if (spinning || items.isEmpty()) return
         spinning = true
         result = null
-        val target = rotation.value + 5 * 360f + (0..359).random().toFloat()
+        // 结构性方案：赢家已被排到指针正下方（items[0]），动画只转整数圈回到原位——结果与画面必然一致
         scope.launch {
             rotation.animateTo(
-                target,
+                rotation.value + 5 * 360f,
                 animationSpec = tween(durationMillis = 3200, easing = CubicBezierEasing(0.12f, 0.85f, 0.15f, 1f)),
             )
-            // 视觉判定：扇区 i 的中线画在 12 点起顺时针 i*seg + seg/2 + rot 处，
-            // 结果 = 中线与指针（12 点）角距最小的那个扇区（对 wrap 取最短路径，天然与画面一致）
-            var bestI = 0
-            var bestDiff = Float.MAX_VALUE
-            for (i in items.indices) {
-                var d = (i * seg + seg / 2f + rotation.value) % 360f
-                if (d > 180f) d = 360f - d
-                if (d < bestDiff) { bestDiff = d; bestI = i }
-            }
-            result = items[bestI]
+            rotation.snapTo(rotation.value)
+            result = items.first()
             spinning = false
         }
     }
@@ -466,7 +448,7 @@ private fun WheelDialog(items: List<StreetFood>, onDismiss: () -> Unit, onPick: 
                         val c = Offset(size.width / 2f, size.height / 2f)
                         rotate(rotation.value, pivot = c) {
                             items.forEachIndexed { i, f ->
-                                val start = -90f + i * seg
+                                val start = -90f - seg / 2f + i * seg
                                 drawArc(
                                     color = WHEEL_COLORS[i % WHEEL_COLORS.size],
                                     startAngle = start,
@@ -487,21 +469,24 @@ private fun WheelDialog(items: List<StreetFood>, onDismiss: () -> Unit, onPick: 
                                     )
                                 }
                             }
+                            // 文字「印」在扇区上：随盘同角度旋转、沿扇区中线径向排布（真实转盘样式）
                             items.forEachIndexed { i, f ->
-                                // 文字位置随盘旋转（纯三角函数，位置绝对精确），但文字本身保持水平，永远可读
-                                val angRad = Math.toRadians(((i * seg + seg / 2f + rotation.value) % 360f).toDouble())
-                                val dist = r - 30.dp.toPx()
-                                val px = c.x + (dist * sin(angRad)).toFloat()
-                                val py = c.y - (dist * cos(angRad)).toFloat()
-                                val layout = textMeasurer.measure(
-                                    f.name.take(6),
-                                    style = TextStyle(
-                                        fontSize = if (result === f) 14.sp else 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF3A2A24),
-                                    ),
-                                )
-                                drawText(layout, topLeft = Offset(px - layout.size.width / 2f, py - layout.size.height / 2f))
+                                val mid = -90f + i * seg
+                                rotate(mid, pivot = c) {
+                                    val layout = textMeasurer.measure(
+                                        f.name.take(6),
+                                        style = TextStyle(
+                                            fontSize = if (result === f) 14.sp else 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF3A2A24),
+                                        ),
+                                    )
+                                    val dist = r - 24.dp.toPx()
+                                    drawText(
+                                        layout,
+                                        topLeft = Offset(c.x - layout.size.width / 2f, c.y - dist - layout.size.height / 2f),
+                                    )
+                                }
                             }
                         }
                         drawCircle(Color(0xFFB08970), radius = 4.dp.toPx(), center = c)
