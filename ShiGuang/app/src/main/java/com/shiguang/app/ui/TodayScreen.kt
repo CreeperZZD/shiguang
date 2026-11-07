@@ -46,7 +46,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> Unit, onOpenDiary: () -> Unit = {}, onOpenStreet: () -> Unit = {}) {
+fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> Unit, onOpenDiary: () -> Unit = {}, onOpenStreet: () -> Unit = {}, onOpenShake: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     var plan by remember { mutableStateOf<DailyPlan?>(null) }
     var err by remember { mutableStateOf<String?>(null) }
@@ -139,7 +139,32 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
         }
     }
 
-    // 摇一摇已改为全局交互（摇动手机 / 我的页入口），主页不再放卡片
+    // 摇一摇：仅今日页内响应摇动手机（离开本页自动注销传感器，其他页面不误触）
+    // 阈值 3.2g + 防抖 2s，避免日常拿手机就触发
+    val shakeCtx = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.DisposableEffect(shakeCtx) {
+        val sm = shakeCtx.getSystemService(android.content.Context.SENSOR_SERVICE) as? android.hardware.SensorManager
+        val sensor = sm?.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
+        var lastShake = 0L
+        val listener = object : android.hardware.SensorEventListener {
+            override fun onSensorChanged(e: android.hardware.SensorEvent) {
+                val gx = e.values[0] / android.hardware.SensorManager.GRAVITY_EARTH
+                val gy = e.values[1] / android.hardware.SensorManager.GRAVITY_EARTH
+                val gz = e.values[2] / android.hardware.SensorManager.GRAVITY_EARTH
+                val g = kotlin.math.sqrt(gx * gx + gy * gy + gz * gz.toDouble())
+                if (g > 3.2) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastShake > 2000) {
+                        lastShake = now
+                        onOpenShake()
+                    }
+                }
+            }
+            override fun onAccuracyChanged(s: android.hardware.Sensor?, accuracy: Int) {}
+        }
+        sm?.registerListener(listener, sensor, android.hardware.SensorManager.SENSOR_DELAY_NORMAL)
+        onDispose { sm?.unregisterListener(listener) }
+    }
 
     when {
         err != null && plan == null -> ErrorBox(err!!)

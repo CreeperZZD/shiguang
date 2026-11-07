@@ -25,7 +25,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -35,7 +34,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -135,32 +133,6 @@ fun App(onSetTheme: (String) -> Unit = {}) {
             route == "prefs" -> "settings"
             else -> "main"
         }
-    }
-
-    // 摇一摇：任意页面摇动手机 → 进入摇一摇页（加速度传感器，阈值 2.6g，防抖 1.5s）
-    val ctx = LocalContext.current
-    DisposableEffect(ctx) {
-        val sm = ctx.getSystemService(android.content.Context.SENSOR_SERVICE) as? android.hardware.SensorManager
-        val sensor = sm?.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
-        var lastShake = 0L
-        val listener = object : android.hardware.SensorEventListener {
-            override fun onSensorChanged(e: android.hardware.SensorEvent) {
-                val gx = e.values[0] / android.hardware.SensorManager.GRAVITY_EARTH
-                val gy = e.values[1] / android.hardware.SensorManager.GRAVITY_EARTH
-                val gz = e.values[2] / android.hardware.SensorManager.GRAVITY_EARTH
-                val g = kotlin.math.sqrt(gx * gx + gy * gy + gz * gz.toDouble())
-                if (g > 2.6) {
-                    val now = System.currentTimeMillis()
-                    if (now - lastShake > 1500) {
-                        lastShake = now
-                        route = "shake"
-                    }
-                }
-            }
-            override fun onAccuracyChanged(s: android.hardware.Sensor?, accuracy: Int) {}
-        }
-        sm?.registerListener(listener, sensor, android.hardware.SensorManager.SENSOR_DELAY_NORMAL)
-        onDispose { sm?.unregisterListener(listener) }
     }
 
     when {
@@ -322,6 +294,7 @@ fun MainTabs(
                     onOpenWeekly = onOpenWeekly,
                     onOpenDiary = onOpenDiary,
                     onOpenStreet = onOpenStreet,
+                    onOpenShake = onOpenShake,
                 )
                     1 -> IngredientsScreen(onOpenRecipe = onOpenRecipe, onOpenFridgeScan = onOpenFridgeScan)
                     2 -> RecipesScreen(
