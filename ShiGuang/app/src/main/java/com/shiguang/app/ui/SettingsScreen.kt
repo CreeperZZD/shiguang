@@ -128,6 +128,27 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPrefs: () -> Unit = {}) {
             }
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))
+            Text("功能开关", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(8.dp))
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("摇一摇（今日页摇手机出菜）", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "关闭后不影响「我的」页里的入口",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = AppSettings.shakeEnabled,
+                    onCheckedChange = { AppSettings.setShakeEnabled(ctx, it) },
+                )
+            }
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
             Text("权限管理", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
             Text(
@@ -168,7 +189,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPrefs: () -> Unit = {}) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(16.dp))
             OutlinedTextField(
                 value = aiBase,
                 onValueChange = { aiBase = it.trim(); aiSaved = false },
@@ -177,7 +198,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPrefs: () -> Unit = {}) {
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = MaterialTheme.typography.bodySmall,
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(14.dp))
             OutlinedTextField(
                 value = aiKey,
                 onValueChange = { aiKey = it.trim(); aiSaved = false },
@@ -186,7 +207,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPrefs: () -> Unit = {}) {
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = MaterialTheme.typography.bodySmall,
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(14.dp))
             OutlinedTextField(
                 value = aiModel,
                 onValueChange = { aiModel = it.trim(); aiSaved = false },

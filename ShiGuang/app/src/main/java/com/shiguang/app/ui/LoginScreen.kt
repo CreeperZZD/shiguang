@@ -224,12 +224,12 @@ fun LoginScreen(onLoginDone: (profileComplete: Boolean, meJson: String?) -> Unit
             }
             Spacer(Modifier.height(16.dp))
             TextButton(onClick = onGuest) { Text("先逛逛（游客模式，不登录也能看） ›") }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "游客数据仅保存在本机 · 登录后可云同步",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
-        Text(
-            "游客数据仅保存在本机 · 登录后可云同步",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
-        )
     }
 }

@@ -7,7 +7,9 @@ import android.util.Base64
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,8 +33,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -75,6 +79,9 @@ fun FridgeScanScreen(onDone: (Int) -> Unit, onBack: () -> Unit) {
     var scanning by remember { mutableStateOf(false) }
     var msg by remember { mutableStateOf<String?>(null) }
     var noCamPerm by remember { mutableStateOf(false) }
+    var renameFrom by remember { mutableStateOf<String?>(null) }
+    var renameTo by remember { mutableStateOf("") }
+    var manualAdd by remember { mutableStateOf("") }
 
     // 拍照：先建临时文件，TakePicture 成功后加入列表
     val pendingCameraUri = remember { mutableStateOf<Uri?>(null) }
@@ -219,28 +226,60 @@ fun FridgeScanScreen(onDone: (Int) -> Unit, onBack: () -> Unit) {
             recognized?.let { list ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp)) {
-                        Text("识别结果（点一下取消选择）", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("识别结果（点一下取消选择 · 点「改」可改名）", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(8.dp))
                         if (list.isEmpty()) {
-                            Text("没认出食材，试试光线充足再拍一张", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("没认出食材，试试光线充足再拍一张，或在下面手动添加", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else {
-                            Row {
-                                Column {
-                                    list.chunked(4).forEach { rowItems ->
-                                        Row {
-                                            rowItems.forEach { name ->
-                                                AssistChip(
-                                                    onClick = {
-                                                        picked = if (name in picked) picked - name else picked + name
-                                                    },
-                                                    label = { Text(if (name in picked) "✓ $name" else name) },
-                                                    modifier = Modifier.padding(2.dp),
-                                                )
-                                            }
-                                        }
+                            // FlowRow：chip 按内容自适应宽度，不再被固定列压成竖排
+                            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                            androidx.compose.foundation.layout.FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                list.forEach { name ->
+                                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                        AssistChip(
+                                            onClick = {
+                                                picked = if (name in picked) picked - name else picked + name
+                                            },
+                                            label = { Text(if (name in picked) "✓ $name" else name) },
+                                            modifier = Modifier.padding(2.dp),
+                                        )
+                                        Text(
+                                            "改",
+                                            Modifier
+                                                .clickable { renameFrom = name; renameTo = name }
+                                                .padding(horizontal = 6.dp, vertical = 8.dp),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            style = MaterialTheme.typography.labelLarge,
+                                        )
                                     }
                                 }
                             }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        // 手动补充 AI 没认出的食材
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = manualAdd,
+                                onValueChange = { manualAdd = it },
+                                modifier = Modifier.weight(1f),
+                                placeholder = { Text("AI 没认出的？手动补充", style = MaterialTheme.typography.bodyMedium) },
+                                singleLine = true,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    val n = manualAdd.trim()
+                                    if (n.isNotEmpty() && n !in list) {
+                                        recognized = list + n
+                                        picked = picked + n
+                                    }
+                                    manualAdd = ""
+                                },
+                                enabled = manualAdd.trim().isNotEmpty(),
+                            ) { Text("添加") }
                         }
                         Spacer(Modifier.height(10.dp))
                         Button(
@@ -256,6 +295,34 @@ fun FridgeScanScreen(onDone: (Int) -> Unit, onBack: () -> Unit) {
                 OutlinedButton(onClick = { msg = null }, modifier = Modifier.fillMaxWidth()) {
                     Text(it, color = MaterialTheme.colorScheme.error)
                 }
+            }
+
+            renameFrom?.let { from ->
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { renameFrom = null },
+                    title = { Text("改个名") },
+                    text = {
+                        OutlinedTextField(
+                            value = renameTo,
+                            onValueChange = { renameTo = it },
+                            singleLine = true,
+                            label = { Text("食材名") },
+                        )
+                    },
+                    confirmButton = {
+                        Button(onClick = {
+                            val to = renameTo.trim()
+                            if (to.isNotEmpty() && to != from) {
+                                recognized = recognized!!.map { if (it == from) to else it }
+                                picked = if (from in picked) (picked - from) + to else picked
+                            }
+                            renameFrom = null
+                        }, enabled = renameTo.trim().isNotEmpty()) { Text("确定") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { renameFrom = null }) { Text("取消") }
+                    },
+                )
             }
             Spacer(Modifier.height(24.dp))
         }

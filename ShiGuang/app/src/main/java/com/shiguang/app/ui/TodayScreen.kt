@@ -152,7 +152,7 @@ fun TodayScreen(target: Int?, onOpenRecipe: (Long) -> Unit, onOpenWeekly: () -> 
                 val gy = e.values[1] / android.hardware.SensorManager.GRAVITY_EARTH
                 val gz = e.values[2] / android.hardware.SensorManager.GRAVITY_EARTH
                 val g = kotlin.math.sqrt(gx * gx + gy * gy + gz * gz.toDouble())
-                if (g > 3.2) {
+                if (g > 3.2 && com.shiguang.app.data.AppSettings.shakeEnabled) {
                     val now = System.currentTimeMillis()
                     if (now - lastShake > 2000) {
                         lastShake = now

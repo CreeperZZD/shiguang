@@ -17,11 +17,16 @@ object AppSettings {
     var streetMode by mutableStateOf(false)
         private set
 
+    /** 摇一摇开关：关闭后今日页摇动手机不再触发（仍可从「我的」页入口进入） */
+    var shakeEnabled by mutableStateOf(true)
+        private set
+
     fun init(context: android.content.Context) {
         val prefs = context.getSharedPreferences("shiguang_settings", android.content.Context.MODE_PRIVATE)
         dataSaver = prefs.getBoolean("data_saver", false)
         themeMode = prefs.getString("theme_mode", Session.themeMode) ?: "system"
         streetMode = prefs.getBoolean("street_mode", false)
+        shakeEnabled = prefs.getBoolean("shake_enabled", true)
     }
 
     fun setDataSaver(context: android.content.Context, v: Boolean) {
@@ -41,5 +46,11 @@ object AppSettings {
         streetMode = v
         context.getSharedPreferences("shiguang_settings", android.content.Context.MODE_PRIVATE)
             .edit().putBoolean("street_mode", v).apply()
+    }
+
+    fun setShakeEnabled(context: android.content.Context, v: Boolean) {
+        shakeEnabled = v
+        context.getSharedPreferences("shiguang_settings", android.content.Context.MODE_PRIVATE)
+            .edit().putBoolean("shake_enabled", v).apply()
     }
 }
