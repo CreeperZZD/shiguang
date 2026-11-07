@@ -471,7 +471,8 @@ private fun WheelDialog(items: List<StreetFood>, onDismiss: () -> Unit, onPick: 
                             }
                             // 文字「印」在扇区上：随盘同角度旋转、沿扇区中线径向排布（真实转盘样式）
                             items.forEachIndexed { i, f ->
-                                val mid = -90f + i * seg
+                                // 文字转到扇区中线：扇区 i 覆盖 12点系 [i*seg-30°, i*seg+30°]，中线 = i*seg
+                                val mid = i * seg
                                 rotate(mid, pivot = c) {
                                     val layout = textMeasurer.measure(
                                         f.name.take(6),
